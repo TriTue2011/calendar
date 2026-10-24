@@ -11,10 +11,10 @@ import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 
 const THU_ANH = {
   // mọi sprite sheet: lưới cot × hang khung, phát theo thứ tự; fps là tốc độ khi «chạy»
-  // fps = số khung mỗi giây; chu kỳ 12 khung = 12/fps giây (đi bộ ~2 giây một vòng, ngựa phi ~1,3 giây). Có thể nhân thêm bằng cấu hình toc_do.
-  ngo: { cot: 4, hang: 3, fps: 9 }, ty: { cot: 4, hang: 3, fps: 6 }, suu: { cot: 4, hang: 3, fps: 5 }, dan: { cot: 4, hang: 3, fps: 6 },
-  mao: { cot: 4, hang: 3, fps: 6 }, thin: { cot: 4, hang: 3, fps: 6 }, ran: { cot: 4, hang: 3, fps: 6 }, mui: { cot: 4, hang: 3, fps: 6 },
-  than: { cot: 4, hang: 3, fps: 6 }, ga: { cot: 4, hang: 3, fps: 6 }, cho: { cot: 4, hang: 3, fps: 6 }, heo: { cot: 4, hang: 3, fps: 6 },
+  // fps = số khung mỗi giây; chu kỳ 12 khung = 12/fps giây (đi bộ ~3 giây một vòng, ngựa phi ~1,7 giây). Giữa hai khung có mờ chuyển (crossfade) nên chậm mà vẫn mượt. Có thể nhân thêm bằng cấu hình toc_do.
+  ngo: { cot: 4, hang: 3, fps: 7 }, ty: { cot: 4, hang: 3, fps: 4 }, suu: { cot: 4, hang: 3, fps: 3.5 }, dan: { cot: 4, hang: 3, fps: 4 },
+  mao: { cot: 4, hang: 3, fps: 4 }, thin: { cot: 4, hang: 3, fps: 4 }, ran: { cot: 4, hang: 3, fps: 4 }, mui: { cot: 4, hang: 3, fps: 4 },
+  than: { cot: 4, hang: 3, fps: 4 }, ga: { cot: 4, hang: 3, fps: 4 }, cho: { cot: 4, hang: 3, fps: 4 }, heo: { cot: 4, hang: 3, fps: 4 },
 };
 const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
@@ -60,15 +60,23 @@ const gioHienTai = (gio, now) => { const h = now.getHours(); return gio.find((g)
 
 // ---------- hình con giáp: sprite WebP (nếu có), không thì bộ vector dự phòng ----------
 let _uid = 0;
-function keyframesSprite(ten, cot, hang) {
+function keyframesSprite(ten, cot, hang, dich = 0) {
   const n = cot * hang; let s = `@keyframes ${ten}{`;
   for (let i = 0; i < n; i++) {
-    const c = i % cot, r = Math.floor(i / cot);
+    const j = (i + dich) % n, c = j % cot, r = Math.floor(j / cot);
     s += `${(i * 100 / n).toFixed(3)}%{background-position:${cot > 1 ? (c * 100 / (cot - 1)).toFixed(2) : 0}% ${hang > 1 ? (r * 100 / (hang - 1)).toFixed(2) : 0}%}`;
   }
   return s + "}";
 }
-const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang)).join("\n") + `
+const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang) + keyframesSprite("spn-" + k, v.cot, v.hang, 1)).join("\n") + `
+.spx{position:relative;display:block;width:100%}
+.spx>i{position:absolute;inset:0;background-image:var(--bg);background-size:var(--bs);background-repeat:no-repeat;background-position:0 0}
+.spx>i.b{opacity:0}
+.spx.chay>i.a{animation:var(--spa) var(--sd) step-end infinite}
+.spx.chay>i.b{animation:var(--spb) var(--sd) step-end infinite,spx-ramp var(--ft) linear infinite}
+.spx:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
+.dung .spx>i,.spx.dung>i{animation-play-state:paused}
+@keyframes spx-ramp{from{opacity:0}to{opacity:1}}
 .sp:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
 .sp{display:block;width:100%;background-repeat:no-repeat;background-position:0 0;image-rendering:auto}
 .sp.chay{animation-name:var(--sp);animation-duration:var(--sd);animation-iteration-count:infinite;animation-timing-function:step-end}
@@ -92,7 +100,8 @@ async function hinhThu(khoa, chay, heSo = 1) {
   const sp = await dongSprite(khoa);
   if (sp) {
     const c = THU_ANH[khoa], n = c.cot * c.hang;
-    return `<div class="sp${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};background-image:url('${GOC}${khoa}.webp');background-size:${c.cot * 100}% ${c.hang * 100}%;--sp:sp-${khoa};--sd:${(n / (c.fps * (+heSo > 0 ? +heSo : 1))).toFixed(3)}s" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"></div>`;
+    const fk = c.fps * (+heSo > 0 ? +heSo : 1);
+    return `<div class="spx${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--ft:${(1 / fk).toFixed(3)}s;--spa:sp-${khoa};--spb:spn-${khoa}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
@@ -126,11 +135,11 @@ button{font:inherit;color:inherit}
 .dau-to{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;letter-spacing:.07em;color:var(--vien);font-size:4.1cqw;text-transform:uppercase;padding:0 1cqw;border-bottom:.35cqw dotted rgba(138,42,28,.5);padding-bottom:1.1cqw}
 .dau-to b{font-size:5.4cqw;letter-spacing:.06em}
 .thu-ngay{text-align:center;font-weight:800;letter-spacing:.34em;color:var(--muc);font-size:5.6cqw;margin-top:.6cqw;text-transform:uppercase}
-.so{text-align:center;font-family:"Playfair Display","Noto Serif Display","Bodoni MT",Georgia,serif;font-weight:900;font-size:27cqw;line-height:29cqw;height:29cqw;margin-bottom:1.6cqw;font-variant-numeric:lining-nums;color:#241710;text-shadow:0 .5cqw 0 rgba(255,255,255,.55),0 -.2cqw 0 rgba(0,0,0,.18);letter-spacing:-.02em;margin:-.4cqw 0 0}
+.so{text-align:center;font-family:"Playfair Display","Noto Serif Display","Bodoni MT",Georgia,serif;font-weight:900;font-size:27cqw;line-height:29cqw;height:29cqw;margin-bottom:4cqw;font-variant-numeric:lining-nums;color:#241710;text-shadow:0 .5cqw 0 rgba(255,255,255,.55),0 -.2cqw 0 rgba(0,0,0,.18);letter-spacing:-.02em;margin:-.4cqw 0 0}
 .so.do{color:var(--do)}.so.t7{color:#1d4a63}
 .am{text-align:center;font-size:4.7cqw;font-weight:700;color:var(--vien);line-height:1.25}
-.am small{display:block;font-size:3.5cqw;font-weight:500;color:var(--muc);opacity:.85;letter-spacing:.02em}
-.le{margin:.4cqw auto 0;padding:.5cqw 3cqw;border-radius:99px;background:var(--do);color:#fff3d6;font-size:3.5cqw;font-weight:700;letter-spacing:.04em;text-align:center;max-width:92%}
+.am small{display:block;margin-top:1.4cqw;line-height:1.45;font-size:3.5cqw;font-weight:500;color:var(--muc);opacity:.85;letter-spacing:.02em}
+.le{margin:2.4cqw auto 1cqw;padding:.5cqw 3cqw;border-radius:99px;background:var(--do);color:#fff3d6;font-size:3.5cqw;font-weight:700;letter-spacing:.04em;text-align:center;max-width:92%}
 .cot-thu{display:flex;flex-direction:column;align-self:end;min-width:0}
 .cot-thu .canh-thu{align-self:stretch}
 .phan-tren{position:relative;flex:1 1 auto;margin:-5.8cqw -4.6cqw 0;padding:7cqw 4.6cqw 1.6cqw;display:flex;flex-direction:column;justify-content:space-between;gap:.8cqw;background-color:rgba(246,237,214,.0);background-size:cover;background-position:center;border-radius:1.4cqw 1.4cqw 0 0}
@@ -138,25 +147,25 @@ button{font:inherit;color:inherit}
 .phan-tren .dau-to,.phan-tren .thu-ngay,.phan-tren .am,.phan-tren .am small,.phan-tren .le{text-shadow:0 0 .7cqw rgba(252,246,232,1),0 0 1.6cqw rgba(252,246,232,.95),0 0 3cqw rgba(252,246,232,.8)}
 .phan-tren .so{text-shadow:0 0 1.2cqw rgba(252,246,232,1),0 0 3cqw rgba(252,246,232,.9),0 .5cqw 0 rgba(255,255,255,.5)}
 .phan-tren>*{position:relative}
-.khung-thu{position:relative;flex:0 0 auto;min-height:0;display:grid;grid-template-columns:44% 1fr;gap:2cqw;align-items:end;border-top:.35cqw dotted rgba(138,42,28,.45);border-bottom:.35cqw dotted rgba(138,42,28,.45);padding:1cqw 0}
-.canh-thu{position:relative;align-self:end;overflow:visible;padding-bottom:1.2cqw}
+.khung-thu{position:relative;flex:0 0 auto;min-height:0;display:grid;grid-template-columns:42% 1fr;gap:5cqw;align-items:end;border-top:.35cqw dotted rgba(138,42,28,.45);border-bottom:.35cqw dotted rgba(138,42,28,.45);padding:3cqw 0 2.4cqw}
+.canh-thu{position:relative;align-self:end;overflow:visible;padding-bottom:2cqw}
 .canh-thu::after{content:"";position:absolute;left:-4%;right:-4%;bottom:.4cqw;height:.9cqw;border-radius:99px;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 5cqw,transparent 5cqw 8cqw);animation:duong 2.4s linear infinite;animation-play-state:paused;opacity:.7}
 .chay-on.dang-chay .canh-thu::after{animation-play-state:running}
 @keyframes duong{to{background-position-x:-8cqw}}
 @keyframes sp-tho{0%,100%{transform:scale(1,1)}50%{transform:scale(1.006,1.016)}}
-.hh{display:flex;flex-wrap:wrap;gap:.8cqw;justify-content:center;margin-top:.6cqw;font-size:2.5cqw;font-weight:700;color:var(--vien);white-space:nowrap}
+.hh{display:flex;flex-wrap:wrap;gap:1.4cqw;justify-content:center;margin-top:2.4cqw;font-size:2.5cqw;font-weight:700;color:var(--vien);white-space:nowrap}
 .hh span{white-space:nowrap;background:rgba(255,248,230,.85);border:.25cqw solid rgba(200,150,46,.7);border-radius:99px;padding:.15cqw 1.4cqw}
 .dau-thang .hh{justify-content:flex-end;flex-wrap:wrap;color:#fff1cf}.dau-thang .hh span{background:rgba(0,0,0,.22);border-color:rgba(255,230,160,.6)}
-.thongtin{font-size:3.4cqw;line-height:1.35;display:flex;flex-direction:column;gap:.9cqw;align-self:center}
-.thongtin>div:not(.gio){display:grid;grid-template-columns:minmax(17cqw,max-content) minmax(0,1fr);gap:1.4cqw}
+.thongtin{font-size:3.5cqw;line-height:1.4;display:flex;flex-direction:column;gap:2.2cqw;align-self:center}
+.thongtin>div:not(.gio){display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3.2cqw}
 .thongtin b{color:var(--vien);white-space:nowrap;font-weight:700}
-.gio{display:grid;grid-template-columns:repeat(6,1fr);gap:.8cqw;margin-top:.4cqw}
-.gio span{font-size:2.9cqw;text-align:center;padding:.5cqw 0;border-radius:.8cqw;background:rgba(138,42,28,.07);color:rgba(45,27,16,.45)}
+.gio{display:grid;grid-template-columns:repeat(6,1fr);gap:1.6cqw;margin:3cqw 0 1cqw}
+.gio span{font-size:3.2cqw;display:flex;align-items:center;justify-content:center;height:7.4cqw;line-height:1;text-align:center;padding:0;white-space:nowrap;border-radius:.8cqw;background:rgba(138,42,28,.07);color:rgba(45,27,16,.45)}
 .gio span.hd{background:var(--vien);color:#fff4d9;font-weight:700}
 .gio span.nay{outline:.4cqw solid var(--vang);box-shadow:0 0 0 .3cqw var(--giay);animation:nhap 1.6s ease-in-out infinite;animation-play-state:paused}
 .chay-on .gio span.nay{animation-play-state:running}
 @keyframes nhap{50%{filter:brightness(1.25)}}
-.nenky{font-size:3.2cqw;line-height:1.32;display:grid;grid-template-columns:1fr 1fr;gap:2cqw}
+.nenky{font-size:3.3cqw;line-height:1.4;display:grid;grid-template-columns:1fr 1fr;gap:4cqw;margin-top:2.4cqw}
 .nenky p{margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .nenky p b{color:var(--xanh)}.nenky p.ky b{color:var(--do)}
 .cadao{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-align:center;font-style:italic;font-size:3.5cqw;line-height:1.32;color:#3b2616;padding:1.2cqw 2.4cqw;border-radius:1cqw;background:rgba(200,150,46,.12);box-shadow:inset 0 0 0 .3cqw rgba(200,150,46,.45)}
@@ -269,7 +278,7 @@ class LichBlocXuaCard extends HTMLElement {
   _capNhatChay() {
     const chay = this._hien && !document.hidden && this._cfg.hoat_hoa !== false;
     this._banEl?.classList.toggle("chay-on", chay);
-    this.shadowRoot.querySelectorAll(".thu,.thu-hop,.sp").forEach((e) => e.classList.toggle("dung", !chay));
+    this.shadowRoot.querySelectorAll(".thu,.thu-hop,.sp,.spx").forEach((e) => e.classList.toggle("dung", !chay));
   }
   _kiemTraNgay() {
     const now = new Date();
@@ -288,7 +297,7 @@ class LichBlocXuaCard extends HTMLElement {
     const nghiMs = (+this._cfg.nghi_giay > 0 ? +this._cfg.nghi_giay : 25) * 1000;   // nghỉ bao lâu rồi chạy lại
     const doi = (chay) => {
       this._chayThu = chay; this._banEl?.classList.toggle("dang-chay", chay);
-      this.shadowRoot.querySelectorAll(".sp").forEach((e) => e.classList.toggle("chay", chay));
+      this.shadowRoot.querySelectorAll(".sp,.spx").forEach((e) => e.classList.toggle("chay", chay));
       this.shadowRoot.querySelectorAll(".thu").forEach((e) => { e.classList.toggle("di", chay); e.classList.toggle("nghi", !chay); });
       this._thuTimer = setTimeout(() => doi(!chay), (chay ? chayMs : nghiMs) * (0.9 + Math.random() * 0.2));
     };
@@ -355,9 +364,9 @@ class LichBlocXuaCard extends HTMLElement {
             <div><b>Trực</b><span>${esc(tt.truc)}</span></div>
             <div><b>Sao</b><span>${esc(tt.sao)} ${tt.saoDanhGia ? `(${esc(tt.saoDanhGia.split(" ")[0])})` : ""}</span></div>
             <div><b>Xuất hành</b><span>${esc(tt.huong.replace(/\s*\|.*$/, "").replace("Hỷ Thần:", "Hỷ").replace("- Tài Thần:", "· Tài"))}</span></div>
-            <div class="gio" style="display:grid;margin:0">${gioHtml}</div>
           </div>
         </div>
+        <div class="gio">${gioHtml}</div>
         <div class="nenky"><p><b>Nên:</b> ${esc(tt.tot.split(".")[0] || "—")}</p><p class="ky"><b>Kỵ:</b> ${esc(tt.xau.split(".")[0] || "—")}</p></div>
         <div class="sukien" data-sk="${iso(d)}"></div>
         <div class="cadao">${tt.caDao}</div>
