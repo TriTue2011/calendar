@@ -103,8 +103,8 @@ async function hinhThu(khoa, chay, heSo = 1) {
   const sp = await dongSprite(khoa);
   if (sp) {
     const c = THU_ANH[khoa], n = KHUNG_BUOC;
-    const fk = c.fps * (+heSo > 0 ? +heSo : 1);
-    return `<div class="spx${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--dd:${(n / fk / 3).toFixed(3)}s;--spa:sp-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i><b class="dat"></b></div>`;
+    const fk = c.fps * Math.min(4, Math.max(0.25, +heSo > 0 ? +heSo : 1));   // toc_do giới hạn 0,25–4
+    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--dd:${(n / fk / 3).toFixed(3)}s;--spa:sp-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i><b class="dat"></b></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
@@ -177,6 +177,19 @@ button{font:inherit;color:inherit}
 .bong-to{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;background:linear-gradient(180deg,rgba(255,255,255,.0) 0,rgba(40,20,5,.45) 100%)}
 .canh-xe{position:absolute;z-index:7;top:5.6cqw;right:0;width:13cqw;height:13cqw;pointer-events:none;
  background:linear-gradient(225deg,rgba(0,0,0,0) 48%,rgba(90,60,20,.28) 50%,#fff7e0 52%,#e3d2a6 100%);border-radius:0 0 0 2cqw;transition:width .25s,height .25s;opacity:.0}
+.banh{position:absolute;top:1.4cqw;right:1.8cqw;z-index:30;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,244,217,.55);background:rgba(45,27,16,.55);color:#fff4d9;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;opacity:.7;transition:opacity .2s,transform .3s;-webkit-tap-highlight-color:transparent}
+.banh:hover,.banh.mo{opacity:1}.banh.mo{transform:rotate(60deg)}
+.cd{position:absolute;top:calc(1.4cqw + 36px);right:1.8cqw;z-index:30;width:min(92%,300px);box-sizing:border-box;padding:12px 14px 10px;border-radius:12px;background:rgba(250,243,224,.97);border:1px solid var(--vien);box-shadow:0 8px 28px rgba(0,0,0,.45);color:var(--muc);font:14px/1.35 "Noto Serif","Playfair Display",Georgia,serif}
+.cd[hidden]{display:none}
+.cd-tieude{font-weight:700;color:var(--vien);margin-bottom:8px}
+.cd-hang{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:10px}
+.cd-hang input{grid-column:1/3;width:100%;margin:2px 0;accent-color:var(--vien)}
+.cd-hang small{grid-column:1/3;opacity:.7;font-size:12px}
+.cd-gt{color:var(--vien);font-variant-numeric:tabular-nums}
+.cd-nut{display:flex;gap:8px;justify-content:flex-end}
+.cd-nut button{border:1px solid var(--vien);background:#fff8e6;color:var(--vien);border-radius:99px;padding:5px 14px;font:inherit;font-weight:700;cursor:pointer}
+.cd-nut .chinh{background:var(--vien);color:#fff4d9}
+.cd-chuthich{margin-top:6px;font-size:11px;opacity:.6;text-align:right}
 .ban:hover .canh-xe{opacity:1}
 /* thanh nút */
 .thanhnut{display:flex;flex-wrap:wrap;justify-content:center;gap:1.6cqw;margin-top:4cqw}
@@ -247,10 +260,18 @@ class LichBlocXuaCard extends HTMLElement {
     this._suKien = new Map(); this._thuTimer = 0; this._midnight = 0; this._hien = true; this._ready = false;
   }
   static getStubConfig() { return { type: "custom:lich-bloc-xua-card", mode: "bloc" }; }
+  static getConfigElement() { return document.createElement("lich-bloc-xua-card-editor"); }
   getCardSize() { return this._cfg.mode === "de_ban" ? 8 : 9; }
+
+  // ----- cài đặt chuyển động ngay trên thẻ: nhớ riêng từng thiết bị (localStorage), không cần sửa YAML -----
+  _khoaLuu() { return "lich_viet_card:" + (this._cfg.calendar_entity || "") + ":" + (this._cfg.mode || ""); }
+  _docLuu() { try { return JSON.parse(localStorage.getItem(this._khoaLuu()) || "{}") || {}; } catch (e) { return {}; } }
+  _ghiLuu() { try { Object.keys(this._ghi).length ? localStorage.setItem(this._khoaLuu(), JSON.stringify(this._ghi)) : localStorage.removeItem(this._khoaLuu()); } catch (e) { /* không lưu được thì chỉ áp dụng phiên này */ } }
+  _cai(k) { const v = this._ghi && this._ghi[k]; return v !== undefined ? v : this._cfg[k]; }
 
   setConfig(c) {
     this._cfg = { mode: "bloc", hoat_hoa: true, nut: true, rong: 380, ...c };
+    this._ghi = this._docLuu();
     if (!["bloc", "de_ban"].includes(this._cfg.mode)) throw new Error("mode phải là bloc hoặc de_ban");
     this._ready = false; if (this.isConnected && this._hass) { this._ready = true; this._dung(); }
   }
@@ -271,13 +292,44 @@ class LichBlocXuaCard extends HTMLElement {
   // ----- dựng khung -----
   async _dung() {
     const c = this._cfg, gen = (this._gen = (this._gen || 0) + 1);
-    this.shadowRoot.innerHTML = `<style>${CSS}</style><div class="ban" style="--rong:${+c.rong || 380}px"><div class="goc"></div></div>`;
+    this.shadowRoot.innerHTML = `<style>${CSS}</style><div class="ban" style="--rong:${+c.rong || 380}px"><div class="goc"></div>${c.cai_dat === false ? "" : this._htmlCaiDat()}</div>`;
     this._goc = this.shadowRoot.querySelector(".goc"); this._banEl = this.shadowRoot.querySelector(".ban");
     this._ngay = this._ngay || new Date();
     if (c.mode === "de_ban") await this._veDeBan(gen); else await this._veBloc(gen);
     if (gen !== this._gen) return;               // đã có lần dựng mới hơn
-    this._datGioNuaDem(); this._lichThu(); this._capNhatChay(); this._gan();
+    this._datGioNuaDem(); this._lichThu(); this._capNhatChay(); this._gan(); this._ganCaiDat();
     this._taiSuKien();
+  }
+
+  _htmlCaiDat() {
+    const h = (ten, k, min, max, step, mota) => `<label class="cd-hang"><span class="cd-ten">${ten}</span><b class="cd-gt" data-gt="${k}"></b>
+      <input type="range" data-k="${k}" min="${min}" max="${max}" step="${step}" aria-label="${ten}"><small>${mota}</small></label>`;
+    return `<button class="banh" type="button" data-banh title="Cài đặt chuyển động" aria-label="Cài đặt chuyển động"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg></button>
+      <div class="cd" data-cd hidden><div class="cd-tieude">Chuyển động của con giáp</div>
+        ${h("Tốc độ bước", "toc_do", 0.25, 3, 0.05, "1 là mặc định; nhỏ hơn là chậm hơn")}
+        ${h("Bước trong", "chay_giay", 1, 60, 1, "mỗi lần con vật bước bao lâu")}
+        ${h("Nghỉ", "nghi_giay", 0, 300, 5, "nghỉ bao lâu rồi bước lại; 0 là bước liên tục")}
+        <div class="cd-nut"><button type="button" data-mac>Mặc định</button><button type="button" data-xong class="chinh">Xong</button></div>
+        <div class="cd-chuthich">Lưu riêng trên thiết bị này.</div></div>`;
+  }
+  _ganCaiDat() {
+    const R = this.shadowRoot, panel = R.querySelector("[data-cd]"), banh = R.querySelector("[data-banh]"); if (!panel || !banh) return;
+    const mac = { toc_do: 1, chay_giay: 6, nghi_giay: 25 };
+    const hienGt = (k, v) => { const e = R.querySelector(`[data-gt="${k}"]`); if (e) e.textContent = k === "toc_do" ? "×" + (+v).toFixed(2) : (+v === 0 && k === "nghi_giay" ? "không nghỉ" : v + " giây"); };
+    const dat = () => R.querySelectorAll("input[data-k]").forEach((i) => { const k = i.dataset.k, v = this._cai(k); i.value = v !== undefined && v !== "" ? v : mac[k]; hienGt(k, i.value); });
+    dat();
+    const apToc = () => R.querySelectorAll(".spx").forEach((e) => {
+      const fk = (+e.dataset.fps || 1) * Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
+      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(3) + "s"); e.style.setProperty("--dd", (KHUNG_BUOC / fk / 3).toFixed(3) + "s");
+    });
+    banh.addEventListener("click", (e) => { e.stopPropagation(); panel.hidden = !panel.hidden; banh.classList.toggle("mo", !panel.hidden); });
+    panel.addEventListener("pointerdown", (e) => e.stopPropagation());
+    R.querySelectorAll("input[data-k]").forEach((i) => {
+      i.addEventListener("input", () => { const k = i.dataset.k; this._ghi = { ...this._ghi, [k]: +i.value }; hienGt(k, i.value); if (k === "toc_do") apToc(); });
+      i.addEventListener("change", () => { this._ghiLuu(); if (i.dataset.k !== "toc_do") this._lichThu(); });
+    });
+    R.querySelector("[data-mac]").addEventListener("click", () => { this._ghi = {}; this._ghiLuu(); dat(); apToc(); this._lichThu(); });
+    R.querySelector("[data-xong]").addEventListener("click", () => { panel.hidden = true; banh.classList.remove("mo"); });
   }
   _capNhatChay() {
     const chay = this._hien && !document.hidden && this._cfg.hoat_hoa !== false;
@@ -297,12 +349,13 @@ class LichBlocXuaCard extends HTMLElement {
   _lichThu() {
     clearTimeout(this._thuTimer);
     if (this._cfg.hoat_hoa === false) return;
-    const chayMs = (+this._cfg.chay_giay > 0 ? +this._cfg.chay_giay : 6) * 1000;    // chạy bao lâu
-    const nghiMs = (+this._cfg.nghi_giay > 0 ? +this._cfg.nghi_giay : 25) * 1000;   // nghỉ bao lâu rồi chạy lại
+    const chayMs = (+this._cai("chay_giay") > 0 ? +this._cai("chay_giay") : 6) * 1000;    // chạy bao lâu
+    const ng = this._cai("nghi_giay"), nghiMs = (ng === 0 || ng === "0" ? 0 : +ng > 0 ? +ng : 25) * 1000;   // nghỉ bao lâu rồi chạy lại; 0 = chạy liên tục
     const doi = (chay) => {
       this._chayThu = chay; this._banEl?.classList.toggle("dang-chay", chay);
       this.shadowRoot.querySelectorAll(".sp,.spx").forEach((e) => e.classList.toggle("chay", chay));
       this.shadowRoot.querySelectorAll(".thu").forEach((e) => { e.classList.toggle("di", chay); e.classList.toggle("nghi", !chay); });
+      if (!nghiMs) return;   // không nghỉ: cứ chạy mãi
       this._thuTimer = setTimeout(() => doi(!chay), (chay ? chayMs : nghiMs) * (0.9 + Math.random() * 0.2));
     };
     doi(true);
@@ -348,7 +401,7 @@ class LichBlocXuaCard extends HTMLElement {
   async _traTo(d) {
     const tt = thongTinNgay(d), khoa = chiThu(tt, this._cfg.con_giap), now = new Date();
     const hd = gioHienTai(tt.gio, now), laHomNay = cungNgay(d, now);
-    const hinh = await hinhThu(khoa, this._chayThu !== false, this._cfg.toc_do);
+    const hinh = await hinhThu(khoa, this._chayThu !== false, this._cai("toc_do"));
     const gioHtml = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"].map((chi) => {
       const g = tt.gio.find((x) => x.chi === chi); return `<span class="${g ? "hd" : ""}${g && laHomNay && hd && hd.chi === chi ? " nay" : ""}" title="${g ? `${g.tu}–${g.den}h` : ""}">${chi}</span>`;
     }).join("");
@@ -460,7 +513,7 @@ class LichBlocXuaCard extends HTMLElement {
   }
   async _doiThuTheoNgay(d) {
     const dt = this._goc.querySelector(".dau-thang"), kh = dt && dt.querySelector(".canh-thu"); if (!kh) return;
-    const tt = thongTinNgay(d), html = await hinhThu(chiThu(tt, this._cfg.con_giap), this._chayThu !== false, this._cfg.toc_do);
+    const tt = thongTinNgay(d), html = await hinhThu(chiThu(tt, this._cfg.con_giap), this._chayThu !== false, this._cai("toc_do"));
     const khoi = kh.querySelector(".khoi-thu"), hh = kh.querySelector(".hh");
     if (khoi) { khoi.innerHTML = html; khoi.classList.remove("hien"); void khoi.offsetWidth; khoi.classList.add("hien"); }
     if (hh) hh.innerHTML = huyHieu(tt);
@@ -479,7 +532,7 @@ class LichBlocXuaCard extends HTMLElement {
     const dau = new Date(y, m, 1), so = new Date(y, m + 1, 0).getDate(), lech = (dau.getDay() + 6) % 7;
     const ngayHienThu = (this._chonNgay.getMonth() === m && this._chonNgay.getFullYear() === y) ? this._chonNgay : (new Date().getMonth() === m && new Date().getFullYear() === y ? new Date() : new Date(y, m, 1));
     const ttThu = thongTinNgay(ngayHienThu);
-    const hinh = await hinhThu(chiThu(ttThu, this._cfg.con_giap), this._chayThu !== false, this._cfg.toc_do);
+    const hinh = await hinhThu(chiThu(ttThu, this._cfg.con_giap), this._chayThu !== false, this._cai("toc_do"));
     const a1 = getLunarDate(1, m + 1, y), a2 = getLunarDate(so, m + 1, y), now = new Date();
     let cells = ""; const hdr = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((t, i) => `<div class="th${i === 6 ? " cn" : ""}">${t}</div>`).join("");
     for (let i = 0; i < lech; i++) { const d = congNgay(dau, i - lech); cells += this._o(d, true, now); }
@@ -546,6 +599,45 @@ class LichBlocXuaCard extends HTMLElement {
     this.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowUp") this._hanhDong("sau"); else if (e.key === "ArrowLeft" || e.key === "ArrowDown") this._hanhDong("truoc"); });
   }
 }
+
+
+// ---------- hộp cấu hình trong trình chỉnh thẻ của Home Assistant (dùng ha-form có sẵn của HA) ----------
+const MAC_DINH = { mode: "bloc", con_giap: "ngay", hoat_hoa: true, nut: true, toc_do: 1, chay_giay: 6, nghi_giay: 25, rong: 380 };
+const SCHEMA_SUA = [
+  { name: "mode", selector: { select: { mode: "dropdown", options: [{ value: "bloc", label: "Tờ lịch bloc (xé từng ngày)" }, { value: "de_ban", label: "Lịch để bàn (lật tháng)" }] } } },
+  { name: "calendar_entity", selector: { entity: { domain: "calendar" } } },
+  { name: "con_giap", selector: { select: { mode: "dropdown", options: [{ value: "ngay", label: "Theo ngày (đổi mỗi tờ)" }, { value: "thang", label: "Theo tháng" }, { value: "nam", label: "Theo năm" }] } } },
+  { name: "toc_do", selector: { number: { min: 0.25, max: 3, step: 0.05, mode: "slider" } } },
+  { name: "chay_giay", selector: { number: { min: 1, max: 60, step: 1, mode: "slider", unit_of_measurement: "giây" } } },
+  { name: "nghi_giay", selector: { number: { min: 0, max: 300, step: 5, mode: "slider", unit_of_measurement: "giây" } } },
+  { name: "hoat_hoa", selector: { boolean: {} } },
+  { name: "nut", selector: { boolean: {} } },
+  { name: "rong", selector: { number: { min: 260, max: 600, step: 10, mode: "box", unit_of_measurement: "px" } } },
+];
+const NHAN_SUA = { mode: "Kiểu lịch", calendar_entity: "Lịch sự kiện (thực thể calendar)", con_giap: "Con giáp hiển thị", toc_do: "Tốc độ bước (1 = mặc định; nhỏ hơn là chậm hơn)",
+  chay_giay: "Con vật bước trong bao lâu", nghi_giay: "Rồi đứng nghỉ bao lâu trước khi bước lại (0 = bước liên tục)", hoat_hoa: "Bật hoạt hoạ", nut: "Hiện hàng nút Hôm qua / Hôm nay / Ngày mai", rong: "Chiều rộng tối đa của thẻ" };
+class LichBlocXuaCardEditor extends HTMLElement {
+  constructor() { super(); this.attachShadow({ mode: "open" }); this._cfg = {}; this._hass = null; }
+  setConfig(c) { this._cfg = { ...c }; this._ve(); }
+  set hass(h) { this._hass = h; if (this._form) this._form.hass = h; }
+  _ve() {
+    if (!this._form) {
+      this._form = document.createElement("ha-form");
+      this._form.addEventListener("value-changed", (e) => this._doi(e));
+      this.shadowRoot.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.schema = SCHEMA_SUA;
+    this._form.computeLabel = (sc) => NHAN_SUA[sc.name] || sc.name;
+    this._form.data = { ...MAC_DINH, ...this._cfg };
+  }
+  _doi(e) {
+    e.stopPropagation();
+    this._cfg = { ...this._cfg, ...e.detail.value };
+    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._cfg }, bubbles: true, composed: true }));
+  }
+}
+if (!customElements.get("lich-bloc-xua-card-editor")) customElements.define("lich-bloc-xua-card-editor", LichBlocXuaCardEditor);
 
 if (!customElements.get("lich-bloc-xua-card")) customElements.define("lich-bloc-xua-card", LichBlocXuaCard);
 window.customCards = window.customCards || [];

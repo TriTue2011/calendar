@@ -64,8 +64,9 @@ calendar_entity: calendar.su_kien   # tuỳ chọn: hiện sự kiện trên t�
 hoat_hoa: true        # false: tắt mọi chuyển động
 nut: true             # hàng nút Hôm qua / Hôm nay / Ngày mai và đổi chế độ
 chay_giay: 6          # con vật bước trong bao nhiêu giây
-nghi_giay: 25         # rồi đứng nghỉ bao nhiêu giây trước khi bước lại
+nghi_giay: 25         # rồi đứng nghỉ bao nhiêu giây trước khi bước lại (0 = bước liên tục)
 toc_do: 1             # nhân tốc độ bước (0.5 = chậm một nửa, 2 = nhanh gấp đôi)
+cai_dat: true         # nút bánh răng ngay trên thẻ để chỉnh ba thông số trên (false = ẩn nút)
 rong: 380             # chiều rộng tối đa (px)
 ```
 
@@ -76,6 +77,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 ## Nhẹ cho dashboard
 
 - Con vật là **sprite WebP** (10 khung, khoảng 1,7 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
+- **Chỉnh ngay trên thẻ**: bấm nút bánh răng ở góc trên bên phải để kéo thanh trượt *Tốc độ bước*, *Bước trong*, *Nghỉ*; áp dụng tức thì và nhớ riêng cho từng thiết bị (điện thoại và bảng treo tường có thể khác nhau). «Mặc định» quay về giá trị trong YAML. Giá trị trong YAML (`toc_do`, `chay_giay`, `nghi_giay`) là mặc định cho mọi thiết bị.
 - Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng và thở nhẹ (hai khung đứng nghỉ mờ chuyển qua lại); thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Đo trong Chrome không GPU: luồng chính ~2,8% khi con vật chạy, 0,0% khi nghỉ (hai thẻ cùng lúc).
 

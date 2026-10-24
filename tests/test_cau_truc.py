@@ -55,3 +55,13 @@ def test_brand_du_bon_tep_va_dung_kich_thuoc():
 def test_the_nhan_loi_cau_hinh_sai():
     js = (GOC / "frontend" / "lich-bloc-xua-card.js").read_text(encoding="utf-8")
     assert 'mode phải là bloc hoặc de_ban' in js and 'customElements.define("lich-bloc-xua-card"' in js
+
+
+@pytest.mark.parametrize("khoa", ["toc_do", "chay_giay", "nghi_giay", "cai_dat"])
+def test_tuy_chon_chuyen_dong_co_trong_the_va_readme(khoa):
+    """Mỗi tuỳ chọn chuyển động phải được thẻ đọc (kể cả bảng bánh răng) và được README ghi lại, tránh lệch nhau."""
+    the = (GOC / "frontend" / "lich-bloc-xua-card.js").read_text(encoding="utf-8")
+    readme = (GOC.parent.parent / "README.md").read_text(encoding="utf-8")
+    assert khoa in the and f"{khoa}:" in readme
+    if khoa != "cai_dat":
+        assert f'data-k="{khoa}"' in the or f"data-k=\"${{k}}\"" in the or f'"{khoa}"' in the
