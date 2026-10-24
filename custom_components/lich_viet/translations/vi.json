@@ -1,0 +1,141 @@
+{
+  "title": "Âm lịch Việt Nam",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Thiết lập Âm lịch Việt Nam",
+        "data": {
+          "action": "Chọn loại thiết lập"
+        }
+      },
+      "event_am_lich": {
+        "title": "Thêm sự kiện âm lịch",
+        "data": {
+          "event_name": "Tên sự kiện",
+          "event_day": "Ngày diễn ra",
+          "event_month": "Tháng diễn ra",
+          "event_year": "Năm diễn ra (tùy chọn)",
+          "birth_day": "Ngày sinh (tùy chọn)",
+          "birth_month": "Tháng sinh (tùy chọn)",
+          "birth_year": "Năm sinh (tùy chọn)",
+          "event_description": "Chi tiết sự kiện",
+          "event_repeat": "Kiểu lặp lại (hằng tháng thì bỏ qua tháng)"
+        }
+      },
+      "event_duong_lich": {
+        "title": "Thêm sự kiện dương lịch",
+        "data": {
+          "event_name": "Tên sự kiện",
+          "event_day": "Ngày diễn ra",
+          "event_month": "Tháng diễn ra",
+          "event_year": "Năm diễn ra (tùy chọn)",
+          "event_description": "Chi tiết sự kiện",
+          "event_repeat": "Kiểu lặp lại (hằng tháng thì bỏ qua tháng)"
+        }
+      }
+    },
+    "error": {
+      "event_name_required": "Tên sự kiện không được để trống.",
+      "invalid_lunar_date": "Ngày âm lịch không hợp lệ trong phạm vi hỗ trợ.",
+      "invalid_solar_date": "Ngày dương lịch không hợp lệ."
+    },
+    "abort": {
+      "already_configured": "Sự kiện này đã có.",
+      "event_name_required": "Tên sự kiện không được để trống.",
+      "invalid_lunar_date": "Ngày âm lịch không hợp lệ trong phạm vi hỗ trợ.",
+      "invalid_solar_date": "Ngày dương lịch không hợp lệ."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Chỉnh sửa sự kiện",
+        "data": {
+          "event_name": "Tên sự kiện",
+          "event_day": "Ngày diễn ra",
+          "event_month": "Tháng diễn ra",
+          "event_year": "Năm diễn ra (tùy chọn)",
+          "birth_day": "Ngày sinh (tùy chọn)",
+          "birth_month": "Tháng sinh (tùy chọn)",
+          "birth_year": "Năm sinh (tùy chọn)",
+          "event_description": "Chi tiết sự kiện",
+          "event_repeat": "Kiểu lặp lại (hằng tháng thì bỏ qua tháng)"
+        }
+      }
+    },
+    "error": {
+      "event_name_required": "Tên sự kiện không được để trống.",
+      "invalid_lunar_date": "Ngày âm lịch không hợp lệ trong phạm vi hỗ trợ.",
+      "invalid_solar_date": "Ngày dương lịch không hợp lệ."
+    }
+  },
+  "selector": {
+    "setup_action": {
+      "options": {
+        "main": "Tạo cảm biến âm lịch hằng ngày",
+        "su_kien_am_lich": "Thêm sự kiện âm lịch",
+        "su_kien_duong_lich": "Thêm sự kiện dương lịch"
+      }
+    },
+    "conversion_type": {
+      "options": {
+        "solar_to_lunar": "Dương lịch → Âm lịch",
+        "lunar_to_solar": "Âm lịch → Dương lịch"
+      }
+    },
+    "event_repeat": {
+      "options": {
+        "yearly": "Hằng năm",
+        "monthly": "Hằng tháng"
+      }
+    }
+  },
+  "services": {
+    "convert_date": {
+      "name": "Quy đổi ngày âm/dương",
+      "description": "Quy đổi một ngày giữa dương lịch và âm lịch Việt Nam, đồng thời trả về thông tin lịch chi tiết.",
+      "fields": {
+        "conversion_type": {
+          "name": "Kiểu quy đổi",
+          "description": "Chọn hướng quy đổi ngày."
+        },
+        "day": {
+          "name": "Ngày",
+          "description": "Ngày cần quy đổi."
+        },
+        "month": {
+          "name": "Tháng",
+          "description": "Tháng cần quy đổi."
+        },
+        "year": {
+          "name": "Năm",
+          "description": "Năm cần quy đổi, hỗ trợ từ 1800 đến 2199."
+        }
+      }
+    },
+    "nhap_tu_amlich_db": {
+      "name": "Nhập sự kiện từ amlich cũ",
+      "description": "Đọc events.db của tích hợp amlich (chỉ đọc) và tạo sự kiện tương ứng; chạy lại không tạo trùng. Trả về số đã nhập, đã có sẵn và bị bỏ qua.",
+      "fields": {
+        "path": {
+          "name": "Đường dẫn events.db",
+          "description": "Mặc định /config/events.db."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "invalid_date": {
+      "message": "Ngày không hợp lệ: {message}"
+    },
+    "conversion_failed": {
+      "message": "Không thể quy đổi ngày do lỗi xử lý nội bộ."
+    },
+    "path_not_allowed": {
+      "message": "Đường dẫn không nằm trong thư mục Home Assistant cho phép."
+    },
+    "cannot_read_db": {
+      "message": "Không đọc được events.db: {message}"
+    }
+  }
+}

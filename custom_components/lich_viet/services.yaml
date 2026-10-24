@@ -1,0 +1,45 @@
+convert_date:
+  fields:
+    conversion_type:
+      required: true
+      selector:
+        select:
+          translation_key: conversion_type
+          options:
+            - solar_to_lunar
+            - lunar_to_solar
+    day:
+      required: true
+      example: 15
+      selector:
+        number:
+          min: 1
+          max: 31
+          step: 1
+          mode: box
+    month:
+      required: true
+      example: 8
+      selector:
+        number:
+          min: 1
+          max: 12
+          step: 1
+          mode: box
+    year:
+      required: true
+      example: 2026
+      selector:
+        number:
+          min: 1800
+          max: 2199
+          step: 1
+          mode: box
+
+nhap_tu_amlich_db:
+  fields:
+    path:
+      required: false
+      example: /config/events.db
+      selector:
+        text:

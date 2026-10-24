@@ -1,0 +1,141 @@
+{
+  "title": "Vietnamese Lunar Calendar",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Vietnamese Lunar Calendar",
+        "data": {
+          "action": "Choose what to set up"
+        }
+      },
+      "event_am_lich": {
+        "title": "Add lunar-calendar event",
+        "data": {
+          "event_name": "Event name",
+          "event_day": "Day",
+          "event_month": "Month",
+          "event_year": "Year (optional)",
+          "birth_day": "Birth day (optional)",
+          "birth_month": "Birth month (optional)",
+          "birth_year": "Birth year (optional)",
+          "event_description": "Event details",
+          "event_repeat": "Repeat (monthly ignores the month)"
+        }
+      },
+      "event_duong_lich": {
+        "title": "Add solar-calendar event",
+        "data": {
+          "event_name": "Event name",
+          "event_day": "Day",
+          "event_month": "Month",
+          "event_year": "Year (optional)",
+          "event_description": "Event details",
+          "event_repeat": "Repeat (monthly ignores the month)"
+        }
+      }
+    },
+    "error": {
+      "event_name_required": "The event name cannot be empty.",
+      "invalid_lunar_date": "The lunar-calendar date is invalid or outside the supported range.",
+      "invalid_solar_date": "The solar-calendar date is invalid."
+    },
+    "abort": {
+      "already_configured": "This event already exists.",
+      "event_name_required": "The event name cannot be empty.",
+      "invalid_lunar_date": "The lunar-calendar date is invalid or outside the supported range.",
+      "invalid_solar_date": "The solar-calendar date is invalid."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit event",
+        "data": {
+          "event_name": "Event name",
+          "event_day": "Day",
+          "event_month": "Month",
+          "event_year": "Year (optional)",
+          "birth_day": "Birth day (optional)",
+          "birth_month": "Birth month (optional)",
+          "birth_year": "Birth year (optional)",
+          "event_description": "Event details",
+          "event_repeat": "Repeat (monthly ignores the month)"
+        }
+      }
+    },
+    "error": {
+      "event_name_required": "The event name cannot be empty.",
+      "invalid_lunar_date": "The lunar-calendar date is invalid or outside the supported range.",
+      "invalid_solar_date": "The solar-calendar date is invalid."
+    }
+  },
+  "selector": {
+    "setup_action": {
+      "options": {
+        "main": "Create daily lunar-calendar sensor",
+        "su_kien_am_lich": "Add lunar-calendar event",
+        "su_kien_duong_lich": "Add solar-calendar event"
+      }
+    },
+    "conversion_type": {
+      "options": {
+        "solar_to_lunar": "Solar → Lunar",
+        "lunar_to_solar": "Lunar → Solar"
+      }
+    },
+    "event_repeat": {
+      "options": {
+        "yearly": "Every year",
+        "monthly": "Every month"
+      }
+    }
+  },
+  "services": {
+    "convert_date": {
+      "name": "Convert lunar/solar date",
+      "description": "Convert a date between the solar and Vietnamese lunar calendars and return detailed calendar information.",
+      "fields": {
+        "conversion_type": {
+          "name": "Conversion type",
+          "description": "Choose the conversion direction."
+        },
+        "day": {
+          "name": "Day",
+          "description": "Day to convert."
+        },
+        "month": {
+          "name": "Month",
+          "description": "Month to convert."
+        },
+        "year": {
+          "name": "Year",
+          "description": "Year to convert, supported from 1800 through 2199."
+        }
+      }
+    },
+    "nhap_tu_amlich_db": {
+      "name": "Import events from old amlich",
+      "description": "Reads the old amlich events.db (read-only) and creates matching events; re-running creates no duplicates. Returns imported, already present and skipped counts.",
+      "fields": {
+        "path": {
+          "name": "events.db path",
+          "description": "Defaults to /config/events.db."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "invalid_date": {
+      "message": "Invalid date: {message}"
+    },
+    "conversion_failed": {
+      "message": "The date could not be converted because of an internal processing error."
+    },
+    "path_not_allowed": {
+      "message": "The path is not in a directory Home Assistant allows."
+    },
+    "cannot_read_db": {
+      "message": "Cannot read events.db: {message}"
+    }
+  }
+}
