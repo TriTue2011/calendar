@@ -8,6 +8,7 @@ import {
   getCanChi, getGioHoangDao, getHuongXuatHanh, getLunarDate, getSunLongitude, getThanSat, getUniqueDailyContent, getYearCanChi,
 } from './lich-am-duong-viet-nam-core.js?v=20261005';
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
+import { taoXuong } from './lich-bloc-xua-xuong.js';
 
 const THU_ANH = {
   // Mỗi sprite sheet là lưới 6 cột × 3 hàng = 18 khung: khung 0–15 là MỘT CHU KỲ BƯỚC THẬT gồm 16 tư thế (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều
@@ -19,6 +20,39 @@ const THU_ANH = {
 };
 const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
+// Con giáp vẽ bằng xương (WebGL) thay vì sprite: khoá -> tệp cấu hình + hai lớp ảnh.
+// Chỉ con chó ở NV269; 11 con còn lại giữ nguyên đường sprite. Ảnh lớp phải tồn
+// tại thì khoá mới được dùng (test cấu trúc bắt điều này).
+const THU_XUONG = { cho: { chinh: "xuong/cho-chinh.webp", xa: "xuong/cho-xa.webp", cfg: "xuong/cho.json" } };
+// Thử tạo ngữ cảnh WebGL một lần, nhớ kết quả; huỷ ngay ngữ cảnh thử để khỏi
+// tốn suất (~16 ngữ cảnh/trình duyệt).
+let _coWebGL = null;
+function coWebGL() {
+  if (_coWebGL !== null) return _coWebGL;
+  try {
+    const cv = document.createElement("canvas");
+    const gl = cv.getContext("webgl") || cv.getContext("experimental-webgl");
+    if (gl) { const ext = gl.getExtension("WEBGL_lose_context"); if (ext) ext.loseContext(); _coWebGL = true; }
+    else _coWebGL = false;
+  } catch (e) { _coWebGL = false; }
+  return _coWebGL;
+}
+let _cfgXuongP = null, _anhXuongP = null;
+function taiCauHinhXuong() {
+  if (!_cfgXuongP) _cfgXuongP = fetch(new URL("./" + THU_XUONG.cho.cfg, import.meta.url)).then((r) => { if (!r.ok) throw new Error("không tải được cấu hình xương"); return r.json(); });
+  return _cfgXuongP;
+}
+function taiAnhXuong(ten) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im); im.onerror = () => rej(new Error("không tải được ảnh xương " + ten));
+    im.src = new URL("./" + THU_XUONG.cho[ten], import.meta.url).href;
+  });
+}
+function taiAnhXuongCa() {
+  if (!_anhXuongP) _anhXuongP = Promise.all([taiAnhXuong("chinh"), taiAnhXuong("xa")]).then(([chinh, xa]) => ({ chinh, xa }));
+  return _anhXuongP;
+}
 // ảnh nền phong cảnh: mỗi con giáp 12 ảnh, ảnh n = tháng dương lịch n; chỉ phủ phần trên đường gạch
 const urlNenAnh = (khoa, thang) => `${GOC_NEN}${khoa}-${thang}.webp`;
 const nenTren = (khoa, thang) => `background-image:url('${urlNenAnh(khoa, thang)}')`;
@@ -101,6 +135,15 @@ function dongSprite(khoa) {
   return spriteCache.get(khoa);
 }
 async function hinhThu(khoa, chay, heSo = 1) {
+  // Đường xương: chỉ khi khoá có trong THU_XUONG VÀ trình duyệt có WebGL;
+  // tải cấu hình/ảnh lỗi thì rơi về sprite như cũ (không vỡ thẻ).
+  if (THU_XUONG[khoa] && coWebGL()) {
+    try {
+      const cfg = await taiCauHinhXuong();
+      const W = cfg.anh.rong + 2 * cfg.le_khung[0], H = cfg.anh.cao + 2 * cfg.le_khung[1];
+      return `<canvas class="xuong${chay ? " chay" : ""}" data-xuong="${khoa}" width="${W}" height="${H}" style="aspect-ratio:${W}/${H};width:100%;display:block" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"></canvas>`;
+    } catch (e) { /* rơi về sprite bên dưới */ }
+  }
   const sp = await dongSprite(khoa);
   if (sp) {
     const c = THU_ANH[khoa], n = KHUNG_BUOC;
@@ -285,10 +328,12 @@ class LichBlocXuaCard extends HTMLElement {
   disconnectedCallback() {
     this._io?.disconnect(); document.removeEventListener("visibilitychange", this._vis);
     clearTimeout(this._thuTimer); clearTimeout(this._midnight);
+    this._huyXuong();
   }
 
   // ----- dựng khung -----
   async _dung() {
+    this._huyXuong();
     const c = this._cfg, gen = (this._gen = (this._gen || 0) + 1);
     this.shadowRoot.innerHTML = `<style>${CSS}</style><div class="ban" style="--rong:${+c.rong || 380}px"><div class="goc"></div>${c.cai_dat === false ? "" : this._htmlCaiDat()}</div>`;
     this._goc = this.shadowRoot.querySelector(".goc"); this._banEl = this.shadowRoot.querySelector(".ban");
@@ -332,7 +377,49 @@ class LichBlocXuaCard extends HTMLElement {
   _capNhatChay() {
     const chay = this._hien && !document.hidden && this._cfg.hoat_hoa !== false;
     this._banEl?.classList.toggle("chay-on", chay);
-    this.shadowRoot.querySelectorAll(".thu,.thu-hop,.spx").forEach((e) => e.classList.toggle("dung", !chay));
+    this.shadowRoot.querySelectorAll(".thu,.thu-hop,.spx,.xuong").forEach((e) => e.classList.toggle("dung", !chay));
+  }
+  // ----- vòng đời canvas xương: MỘT vòng requestAnimationFrame cho cả thẻ -----
+  // t = đồng hồ đơn / chu kỳ 1,2 s × toc_do; chay tắt thì vẽ tư thế đứng nghỉ
+  // t = 0 cố định (cả hai chân đều ở pha stance, gối thẳng), không tạo ngữ cảnh mới.
+  // Thẻ vẽ lại ngày khác phải HUỶ canvas cũ trước khi innerHTML mới nuốt nó.
+  _huyXuong() {
+    if (this._rafXuong) { cancelAnimationFrame(this._rafXuong); this._rafXuong = 0; }
+    this._gocXuong = undefined;
+    for (const x of this._xuongs || []) { try { x.huy(); } catch (e) { /* đã huỷ */ } }
+    this._xuongs = [];
+  }
+  async _khoiDongXuong() {
+    const canvases = [...this.shadowRoot.querySelectorAll("canvas[data-xuong]:not([data-xuong-da-chay])")];
+    if (!canvases.length) return;
+    let cfg, anh;
+    try { cfg = await taiCauHinhXuong(); anh = await taiAnhXuongCa(); }
+    catch (e) {
+      canvases.forEach((cv) => cv.replaceWith(Object.assign(document.createElement("div"), { className: "thu nghi", innerHTML: veConGiap(cv.dataset.xuong, "u" + ++_uid) })));
+      return;
+    }
+    this._xuongs = this._xuongs || [];
+    for (const cv of canvases) {
+      if (!cv.isConnected) continue;
+      try { this._xuongs.push(taoXuong(cv, cfg, anh)); cv.dataset.xuongDaChay = "1"; }
+      catch (e) { cv.replaceWith(Object.assign(document.createElement("div"), { className: "thu nghi", innerHTML: veConGiap(cv.dataset.xuong, "u" + ++_uid) })); }
+    }
+    if (this._xuongs.length) this._chayVongXuong();
+  }
+  _chayVongXuong() {
+    if (this._rafXuong) return;
+    const buoc = (now) => {
+      if (!this._xuongs?.length) { this._rafXuong = 0; return; }
+      const chay = this._hien && !document.hidden && this._cfg.hoat_hoa !== false;
+      if (chay) {
+        const toc = Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
+        if (this._gocXuong === undefined) this._gocXuong = now;
+        const t = (((now - this._gocXuong) / 1000) / 1.2 * toc) % 1;
+        for (const x of this._xuongs) x.ve(this._chayThu === false ? 0 : t);
+      }
+      this._rafXuong = requestAnimationFrame(buoc);
+    };
+    this._rafXuong = requestAnimationFrame(buoc);
   }
   _kiemTraNgay() {
     const now = new Date();
@@ -352,6 +439,7 @@ class LichBlocXuaCard extends HTMLElement {
     const doi = (chay) => {
       this._chayThu = chay; this._banEl?.classList.toggle("dang-chay", chay);
       this.shadowRoot.querySelectorAll(".spx").forEach((e) => e.classList.toggle("chay", chay));
+      this.shadowRoot.querySelectorAll(".xuong").forEach((e) => e.classList.toggle("chay", chay));
       this.shadowRoot.querySelectorAll(".thu").forEach((e) => { e.classList.toggle("di", chay); e.classList.toggle("nghi", !chay); });
       if (!nghiMs) return;   // không nghỉ: cứ chạy mãi
       this._thuTimer = setTimeout(() => doi(!chay), (chay ? chayMs : nghiMs) * (0.9 + Math.random() * 0.2));
@@ -428,6 +516,7 @@ class LichBlocXuaCard extends HTMLElement {
       </div><div class="vien-trong"></div></div>`;
   }
   async _veBloc(gen = this._gen) {
+    this._huyXuong();
     this._theoHomNay = cungNgay(this._ngay, new Date());
     const tren = await this._traTo(this._ngay), duoi = await this._traTo(congNgay(this._ngay, 1));
     if (gen !== this._gen) return;
@@ -439,10 +528,12 @@ class LichBlocXuaCard extends HTMLElement {
         </div><div class="canh-xe"></div></div>
       ${this._cfg.nut ? `<div class="thanhnut"><button class="nut" data-h="truoc">‹ Hôm qua</button><button class="nut" data-h="nay">Hôm nay</button><button class="nut" data-h="sau">Ngày mai ›</button><button class="nut nho" data-h="doi" title="Chuyển sang lịch để bàn">⇄</button></div>` : ""}`;
     this._veSuKien();
+    this._khoiDongXuong();
   }
   _hieuUngTat() { return matchMedia("(prefers-reduced-motion: reduce)").matches || this._cfg.hoat_hoa === false; }
   async _chuyenNgay(dich, huong, imLang = false) {
     if (this._anim) return; this._anim = true;
+    this._huyXuong();
     const goc = this._goc, tren = goc.querySelector(".lop.tren"), duoi = goc.querySelector(".lop.duoi");
     const truoc = this._ngay; this._ngay = dich; this._theoHomNay = cungNgay(dich, new Date());
     if (huong > 0) {
@@ -487,6 +578,7 @@ class LichBlocXuaCard extends HTMLElement {
 
   // ======================= ĐỂ BÀN =======================
   async _veDeBan(gen = this._gen) {
+    this._huyXuong();
     const n = this._ngay; this._thang = this._thang || { y: n.getFullYear(), m: n.getMonth() };
     this._chonNgay = this._chonNgay || n;
     const html = await this._traThang(this._thang.y, this._thang.m);
@@ -500,6 +592,7 @@ class LichBlocXuaCard extends HTMLElement {
       ${this._cfg.nut ? `<div class="thanhnut"><button class="nut" data-h="truoc">‹ Tháng trước</button><button class="nut" data-h="nay">Hôm nay</button><button class="nut" data-h="sau">Tháng sau ›</button><button class="nut nho" data-h="doi" title="Chuyển sang lịch bloc">⇄</button></div>` : ""}`;
     this._ganO();
     this._veSuKien();
+    this._khoiDongXuong();
   }
   _ganO() {
     this._goc.querySelectorAll(".o[data-d]").forEach((o) => o.addEventListener("click", () => {
@@ -513,10 +606,11 @@ class LichBlocXuaCard extends HTMLElement {
     const dt = this._goc.querySelector(".dau-thang"), kh = dt && dt.querySelector(".canh-thu"); if (!kh) return;
     const tt = thongTinNgay(d), html = await hinhThu(chiThu(tt, this._cfg.con_giap), this._chayThu !== false, this._cai("toc_do"));
     const khoi = kh.querySelector(".khoi-thu"), hh = kh.querySelector(".hh");
-    if (khoi) { khoi.innerHTML = html; khoi.classList.remove("hien"); void khoi.offsetWidth; khoi.classList.add("hien"); }
+    if (khoi) { this._huyXuong(); khoi.innerHTML = html; khoi.classList.remove("hien"); void khoi.offsetWidth; khoi.classList.add("hien"); }
     if (hh) hh.innerHTML = huyHieu(tt);
     const vl = this._goc.querySelector(".vung-luoi"); if (vl) vl.setAttribute("style", nenTren(chiThu(tt, this._cfg.con_giap), d.getMonth() + 1));
     this._capNhatChay();
+    this._khoiDongXuong();
   }
   _chiTiet(d) {
     const t = thongTinNgay(d), al = t.al;

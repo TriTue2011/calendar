@@ -83,6 +83,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 
 ## Giới hạn đã biết
 
+- Con chó bước bằng xương (WebGL): thẻ vẽ con chó bằng một ảnh duy nhất biến dạng theo xương (lưới tam giác, hai xương mỗi chân) thay vì sprite; các con còn lại vẫn dùng sprite. Không có WebGL thì con chó cũng dùng sprite như cũ. Ảnh lớp và khớp của chó ở `custom_components/lich_viet/frontend/xuong/` (xem ghi chú trong `cho.json`: ảnh lớp hiện tại là bản tạm tách từ khung đứng nghỉ của sprite).
 - Hình con giáp do mô hình AI vẽ (phong cách chibi Tết, giống đực); bản gốc nằm trong `custom_components/lich_viet/frontend/thu/`. Muốn đổi, thay tệp `<khoa>.webp` cùng quy cách (lưới 4×3 khung, nền trong suốt). Ảnh nền nằm ở `frontend/nen/<khoa>-<tháng>.webp` (12 ảnh mỗi con, tỉ lệ 2:1). Khoá: `ty suu dan mao thin ran ngo mui than ga cho heo`.
 - Đã kiểm bằng 42 test (gồm 8 test chạy trong Home Assistant giả lập: nhập sự kiện, thực thể Lịch, cảm biến, dịch vụ nhập) và Chrome không đầu cho hai thẻ. **Chưa chạy trong Home Assistant thật của bạn**: màn hình cấu hình bằng tay (thêm sự kiện qua giao diện) và việc đăng ký thẻ trên dashboard thật chưa được thử.
 - Âm lịch tính cho năm 1800–2199.
