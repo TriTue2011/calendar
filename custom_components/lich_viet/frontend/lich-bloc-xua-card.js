@@ -120,7 +120,7 @@ button{font:inherit;color:inherit}
 .dau-to{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;letter-spacing:.14em;color:var(--vien);font-size:4.3cqw;text-transform:uppercase;padding:0 1cqw;border-bottom:.35cqw dotted rgba(138,42,28,.5);padding-bottom:1.1cqw}
 .dau-to b{font-size:5.4cqw;letter-spacing:.06em}
 .thu-ngay{text-align:center;font-weight:800;letter-spacing:.34em;color:var(--muc);font-size:5.6cqw;margin-top:.6cqw;text-transform:uppercase}
-.so{text-align:center;font-family:"Playfair Display","Noto Serif Display","Bodoni MT",Georgia,serif;font-weight:900;font-size:33cqw;line-height:.86;color:#241710;text-shadow:0 .5cqw 0 rgba(255,255,255,.55),0 -.2cqw 0 rgba(0,0,0,.18);letter-spacing:-.02em;margin:-.4cqw 0 0}
+.so{text-align:center;font-family:"Playfair Display","Noto Serif Display","Bodoni MT",Georgia,serif;font-weight:900;font-size:29cqw;line-height:30cqw;height:30cqw;font-variant-numeric:lining-nums;color:#241710;text-shadow:0 .5cqw 0 rgba(255,255,255,.55),0 -.2cqw 0 rgba(0,0,0,.18);letter-spacing:-.02em;margin:-.4cqw 0 0}
 .so.do{color:var(--do)}.so.t7{color:#1d4a63}
 .am{text-align:center;font-size:4.7cqw;font-weight:700;color:var(--vien);line-height:1.25}
 .am small{display:block;font-size:3.5cqw;font-weight:500;color:var(--muc);opacity:.85;letter-spacing:.02em}
@@ -179,7 +179,7 @@ button{font:inherit;color:inherit}
 .luoi-thu .th.cn{color:var(--do)}
 .o{position:relative;aspect-ratio:1/1.08;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2cqw;cursor:pointer;border-radius:1.4cqw;padding:0;color:inherit;transition:background .15s,transform .12s}
 .o:hover{background:rgba(200,150,46,.18)}.o:active{transform:scale(.94)}
-.o b{font-size:5.4cqw;font-weight:800;font-family:"Playfair Display",Georgia,serif;line-height:1}
+.o b{font-size:5.4cqw;font-weight:800;font-family:"Playfair Display",Georgia,serif;line-height:1;font-variant-numeric:lining-nums}
 .o small{font-size:2.6cqw;opacity:.7;line-height:1}
 .o.la{opacity:.32}.o.cn b,.o.nghi b{color:var(--do)}.o.t7 b{color:#1d4a63}
 .o.mung1 small{color:var(--do);font-weight:800;opacity:1}
