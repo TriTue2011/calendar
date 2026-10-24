@@ -24,7 +24,7 @@ Xé tờ (nhấc mép, lật bay lên để lộ tờ ngày hôm sau) và lật 
 <p align="center"><img src="docs/anh/xe-to.webp" alt="Các mốc xé tờ"></p>
 <p align="center"><img src="docs/anh/lat-thang.webp" alt="Các mốc lật tháng"></p>
 
-Mười hai con giáp, mỗi con một sprite 10 khung: 8 khung của một chu kỳ bước thật (chạm đất, hạ thấp, chân chụm, nhấc cao, rồi lặp lại với chân kia dẫn trước; chân và tay phía xa vẽ sẫm hơn nên thấy rõ các chân luân phiên; thú bốn chân hai chân cùng bên bước cùng nhau, bên kia ngược pha; dáng bước được tính bằng toán (chân chạm đất trượt đều từ trước ra sau rồi nhấc vung về trước) và dùng làm sơ đồ xương cho mô hình vẽ; ngựa phi có pha gom chân; rắn và rồng uốn sóng từ đầu về đuôi) cùng 2 khung đứng nghỉ:
+Mười hai con giáp, mỗi con một sprite 18 khung: **16 tư thế của một chu kỳ bước** (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều từ trước ra sau rồi nhấc vung về trước; thú bốn chân hai chân cùng bên đi cùng pha, chân và tay phía xa vẽ sẫm hơn; ngựa phi; rắn và rồng uốn sóng) cùng 2 khung đứng nghỉ. Giữa hai tư thế liền nhau tư thế kế tiếp mờ dần vào, nên chuyển động đổi hình ở mọi khung hình (đo ở 60 khung/giây: hệ số biến thiên 0,5–0,8, trước đó 2,85 khi chỉ có 8 tư thế dừng hình):
 
 <p align="center"><img src="docs/anh/12-con-giap.webp" alt="Mười hai con giáp"></p>
 
@@ -76,7 +76,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 
 ## Nhẹ cho dashboard
 
-- Con vật là **sprite WebP** (10 khung, khoảng 1,7 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
+- Con vật là **sprite WebP** (18 khung, khoảng 2,5 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
 - **Chỉnh ngay trên thẻ**: bấm nút bánh răng ở góc trên bên phải để kéo thanh trượt *Tốc độ bước*, *Bước trong*, *Nghỉ*; áp dụng tức thì và nhớ riêng cho từng thiết bị (điện thoại và bảng treo tường có thể khác nhau). «Mặc định» quay về giá trị trong YAML. Giá trị trong YAML (`toc_do`, `chay_giay`, `nghi_giay`) là mặc định cho mọi thiết bị.
 - Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng và thở nhẹ (hai khung đứng nghỉ mờ chuyển qua lại); thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Đo trong Chrome không GPU: luồng chính ~2,8% khi con vật chạy, 0,0% khi nghỉ (hai thẻ cùng lúc).

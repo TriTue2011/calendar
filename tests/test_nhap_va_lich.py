@@ -102,7 +102,7 @@ def test_sprite_con_giap_day_du_va_nhe(khoa):
     p = THU / f"{khoa}.webp"
     assert p.exists(), f"thiếu {p.name}"
     im = Image.open(p)
-    assert im.format == "WEBP" and im.mode in ("RGBA", "LA") and im.width % 5 == 0 and im.height % 2 == 0   # lưới 5×2: 8 khung bước + 2 khung đứng nghỉ
+    assert im.format == "WEBP" and im.mode in ("RGBA", "LA") and im.width % 6 == 0 and im.height % 3 == 0   # lưới 6×3: 16 khung bước + 2 khung đứng nghỉ
     assert p.stat().st_size < 300_000                      # mỗi sprite sheet dưới 300 KB
     assert im.getchannel("A").getextrema()[0] == 0          # có vùng trong suốt (đã bỏ nền)
 
@@ -112,8 +112,8 @@ KHONG_CHAN = {"ran", "thin"}
 
 def _khung(im, i):
     import numpy as np
-    fw, fh = im.width // 5, im.height // 2
-    return np.array(im.crop(((i % 5) * fw, (i // 5) * fh, (i % 5 + 1) * fw, (i // 5 + 1) * fh)).convert("RGBA"))[:, :, 3] > 40
+    fw, fh = im.width // 6, im.height // 3
+    return np.array(im.crop(((i % 6) * fw, (i // 6) * fh, (i % 6 + 1) * fw, (i // 6 + 1) * fh)).convert("RGBA"))[:, :, 3] > 40
 
 
 def _iou(a, b):
@@ -126,15 +126,18 @@ def test_chu_ky_buoc_co_dong_tac_that(khoa):
     nên làm chậm hay nhanh đều không giống bước đi. Đo trên dữ liệu thật: hai khung khác nhau nhất trong chu kỳ
     phải có dáng chân KHÁC nhau rõ (IoU vùng chân ≤ 0,66 với con có chân; heo chân ngắn đo được 0,63, sprite đứng yên cho 0,8–0,9); rắn/rồng phải có sóng uốn khác pha."""
     im = Image.open(THU / f"{khoa}.webp")
-    f = [_khung(im, i) for i in range(10)]
+    f = [_khung(im, i) for i in range(18)]
     h = f[0].shape[0]
     if khoa in KHONG_CHAN:
-        assert _iou(f[0], f[4]) <= 0.80, "khung 0 và 4 (lệch nửa chu kỳ) gần như trùng, thân không uốn"
+        assert _iou(f[0], f[8]) <= 0.80, "khung 0 và 8 (lệch nửa chu kỳ) gần như trùng, thân không uốn"
     else:
         chan = lambda m: m[int(h * 0.65):, :]    # vùng chân: 35% dưới của khung
-        gan_nhat = min(_iou(chan(f[i]), chan(f[j])) for i in range(8) for j in range(i + 1, 8))
+        gan_nhat = min(_iou(chan(f[i]), chan(f[j])) for i in range(16) for j in range(i + 1, 16))
         assert gan_nhat <= 0.66, "trong cả chu kỳ không có hai khung nào chân khác nhau rõ: chân gần như đứng yên"
-        assert _iou(chan(f[8]), chan(f[0])) <= 0.90, "tư thế đứng nghỉ giống hệt tư thế bước"
+        assert _iou(chan(f[16]), chan(f[0])) <= 0.90, "tư thế đứng nghỉ giống hệt tư thế bước"
+        buoc = min(_iou(chan(f[i]), chan(f[(i + 1) % 16])) for i in range(16))
+        # ngưỡng chỉ bắt bước nhảy BẤT THƯỜNG (thiếu khung, vẽ hỏng). Ngựa phi có bước nhảy lớn nhất (0,22): chân duỗi ↔ gom dưới bụng.
+        assert buoc >= 0.20, f"có bước nhảy chân quá lớn giữa hai tư thế liền nhau ({buoc:.2f}): mờ chuyển sẽ hiện chân thừa"
 
 
 NEN = Path(__file__).resolve().parent.parent / "custom_components" / "lich_viet" / "frontend" / "nen"

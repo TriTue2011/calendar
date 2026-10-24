@@ -10,11 +10,12 @@ import {
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 
 const THU_ANH = {
-  // Mỗi sprite sheet là lưới 5 cột × 2 hàng = 10 khung: khung 0–7 là MỘT CHU KỲ BƯỚC THẬT (chạm đất, hạ thấp, chân chụm, nhấc cao, rồi pha đối;
-  // ngựa phi, rắn/rồng uốn sóng), khung 8–9 là hai tư thế đứng nghỉ (khung 9 hít vào). fps = số khung bước mỗi giây: một vòng = 8/fps giây.
-  ngo: { cot: 5, hang: 2, fps: 9 }, ty: { cot: 5, hang: 2, fps: 7 }, suu: { cot: 5, hang: 2, fps: 5 }, dan: { cot: 5, hang: 2, fps: 7 },
-  mao: { cot: 5, hang: 2, fps: 7 }, thin: { cot: 5, hang: 2, fps: 5 }, ran: { cot: 5, hang: 2, fps: 5 }, mui: { cot: 5, hang: 2, fps: 7 },
-  than: { cot: 5, hang: 2, fps: 7 }, ga: { cot: 5, hang: 2, fps: 7 }, cho: { cot: 5, hang: 2, fps: 7 }, heo: { cot: 5, hang: 2, fps: 7 },
+  // Mỗi sprite sheet là lưới 6 cột × 3 hàng = 18 khung: khung 0–15 là MỘT CHU KỲ BƯỚC THẬT gồm 16 tư thế (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều
+  // từ trước ra sau rồi nhấc vung về trước; ngựa phi; rắn/rồng uốn sóng), khung 16–17 là hai tư thế đứng nghỉ (khung 17 hít vào).
+  // fps = số khung bước mỗi giây: một vòng = 16/fps giây (đi bộ ~1,2 giây, ngựa phi 1 giây). Mỗi tư thế chỉ khác tư thế kề một chút nên mờ chuyển nửa sau mỗi khung không gây bóng ma.
+  ngo: { cot: 6, hang: 3, fps: 16 }, ty: { cot: 6, hang: 3, fps: 13 }, suu: { cot: 6, hang: 3, fps: 11 }, dan: { cot: 6, hang: 3, fps: 13 },
+  mao: { cot: 6, hang: 3, fps: 13 }, thin: { cot: 6, hang: 3, fps: 11 }, ran: { cot: 6, hang: 3, fps: 11 }, mui: { cot: 6, hang: 3, fps: 13 },
+  than: { cot: 6, hang: 3, fps: 13 }, ga: { cot: 6, hang: 3, fps: 13 }, cho: { cot: 6, hang: 3, fps: 13 }, heo: { cot: 6, hang: 3, fps: 13 },
 };
 const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
@@ -60,21 +61,22 @@ const gioHienTai = (gio, now) => { const h = now.getHours(); return gio.find((g)
 
 // ---------- hình con giáp: sprite WebP (nếu có), không thì bộ vector dự phòng ----------
 let _uid = 0;
-const KHUNG_BUOC = 8;   // khung 0–7 của sheet là chu kỳ bước; 8–9 là đứng nghỉ
+const KHUNG_BUOC = 16;   // khung 0–15 của sheet là chu kỳ bước; 16–17 là đứng nghỉ
 const viTri = (j, cot, hang) => `${cot > 1 ? (j % cot * 100 / (cot - 1)).toFixed(2) : 0}% ${hang > 1 ? (Math.floor(j / cot) * 100 / (hang - 1)).toFixed(2) : 0}%`;
-function keyframesSprite(ten, cot, hang) {
+function keyframesSprite(ten, cot, hang, dich = 0) {
   let s = `@keyframes ${ten}{`;
-  for (let i = 0; i < KHUNG_BUOC; i++) s += `${(i * 100 / KHUNG_BUOC).toFixed(3)}%{background-position:${viTri(i, cot, hang)}}`;
+  for (let i = 0; i < KHUNG_BUOC; i++) s += `${(i * 100 / KHUNG_BUOC).toFixed(3)}%{background-position:${viTri((i + dich) % KHUNG_BUOC, cot, hang)}}`;
   return s + "}";
 }
-const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang)).join("\n") + `
+const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang) + keyframesSprite("spn-" + k, v.cot, v.hang, 1)).join("\n") + `
 .spx{position:relative;display:block;width:100%}
 .spx>i{position:absolute;inset:0;background-image:var(--bg);background-size:var(--bs);background-repeat:no-repeat;background-position:var(--p4)}
 .spx>i.b{opacity:0;background-position:var(--p5);animation:spx-tho 4.6s ease-in-out infinite}
 .spx.chay>i.a{animation:var(--spa) var(--sd) step-end infinite}
-.spx.chay>i.b{animation:none;opacity:0}   /* đang bước: mỗi khung là một tư thế thật, không mờ chuyển (tránh bóng ma) */
+.spx.chay>i.b{opacity:0;animation:var(--spb) var(--sd) step-end infinite,spx-ramp var(--ft) linear infinite}   /* đang bước: tư thế kế tiếp mờ vào ở nửa sau mỗi khung */
 .dung .spx>i,.spx.dung>i{animation-play-state:paused}
 @keyframes spx-tho{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes spx-ramp{0%{opacity:0}100%{opacity:1}}
 .sp:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
 .sp{display:block;width:100%;background-repeat:no-repeat;background-position:0 0;image-rendering:auto}
 .sp.chay{animation-name:var(--sp);animation-duration:var(--sd);animation-iteration-count:infinite;animation-timing-function:step-end}
@@ -99,7 +101,7 @@ async function hinhThu(khoa, chay, heSo = 1) {
   if (sp) {
     const c = THU_ANH[khoa], n = KHUNG_BUOC;
     const fk = c.fps * Math.min(4, Math.max(0.25, +heSo > 0 ? +heSo : 1));   // toc_do giới hạn 0,25–4
-    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--spa:sp-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i></div>`;
+    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--ft:${(1 / fk).toFixed(3)}s;--spa:sp-${khoa};--spb:spn-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
@@ -312,7 +314,7 @@ class LichBlocXuaCard extends HTMLElement {
     dat();
     const apToc = () => R.querySelectorAll(".spx").forEach((e) => {
       const fk = (+e.dataset.fps || 1) * Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
-      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(3) + "s");
+      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(3) + "s"); e.style.setProperty("--ft", (1 / fk).toFixed(3) + "s");
     });
     banh.addEventListener("click", (e) => { e.stopPropagation(); panel.hidden = !panel.hidden; banh.classList.toggle("mo", !panel.hidden); });
     panel.addEventListener("pointerdown", (e) => e.stopPropagation());
