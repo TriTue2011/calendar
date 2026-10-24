@@ -73,12 +73,7 @@ const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-"
 .spx>i.b{opacity:0;background-position:var(--p5);animation:spx-tho 4.6s ease-in-out infinite}
 .spx.chay>i.a{animation:var(--spa) var(--sd) step-end infinite}
 .spx.chay>i.b{animation:none;opacity:0}   /* đang bước: mỗi khung là một tư thế thật, không mờ chuyển (tránh bóng ma) */
-.spx>b.dat{display:none;position:absolute;left:-4%;right:-4%;bottom:1.2%;height:.9cqw;border-radius:99px;opacity:.7;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 9cqw,transparent 9cqw 15.33cqw);animation:duong2 var(--dd) linear infinite}
-.canh-thu .spx>b.dat{display:block}   /* vạch đất chỉ ở tờ bloc, không vào tiêu đề lịch để bàn */
-.spx:not(.chay)>b.dat{animation-play-state:paused}
-.dung .spx>i,.dung .spx>b.dat,.spx.dung>i{animation-play-state:paused}
-.canh-thu:has(.spx)::after{display:none}
-@keyframes duong2{to{background-position-x:-15.33cqw}}
+.dung .spx>i,.spx.dung>i{animation-play-state:paused}
 @keyframes spx-tho{0%,100%{opacity:0}50%{opacity:1}}
 .sp:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
 .sp{display:block;width:100%;background-repeat:no-repeat;background-position:0 0;image-rendering:auto}
@@ -104,7 +99,7 @@ async function hinhThu(khoa, chay, heSo = 1) {
   if (sp) {
     const c = THU_ANH[khoa], n = KHUNG_BUOC;
     const fk = c.fps * Math.min(4, Math.max(0.25, +heSo > 0 ? +heSo : 1));   // toc_do giới hạn 0,25–4
-    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--dd:${(n / fk / 3).toFixed(3)}s;--spa:sp-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i><b class="dat"></b></div>`;
+    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--spa:sp-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
@@ -152,9 +147,7 @@ button{font:inherit;color:inherit}
 .phan-tren>*{position:relative}
 .khung-thu{position:relative;flex:0 0 auto;min-height:0;display:grid;grid-template-columns:42% 1fr;gap:5cqw;align-items:end;border-top:.35cqw dotted rgba(138,42,28,.45);border-bottom:.35cqw dotted rgba(138,42,28,.45);padding:3cqw 0 2.4cqw}
 .canh-thu{position:relative;align-self:end;overflow:visible;padding-bottom:2cqw}
-.canh-thu::after{content:"";position:absolute;left:-4%;right:-4%;bottom:.4cqw;height:.9cqw;border-radius:99px;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 5cqw,transparent 5cqw 8cqw);animation:duong 2.4s linear infinite;animation-play-state:paused;opacity:.7}
-.chay-on.dang-chay .canh-thu::after{animation-play-state:running}
-@keyframes duong{to{background-position-x:-8cqw}}
+.canh-thu::after{content:"";position:absolute;left:-2%;right:-2%;bottom:calc(2cqw + .5cqw);height:.5cqw;border-radius:99px;background:rgba(90,60,20,.38)}   /* đường đất liền, đứng yên */
 @keyframes sp-tho{0%,100%{transform:scale(1,1)}50%{transform:scale(1.006,1.016)}}
 .hh{display:flex;flex-wrap:wrap;gap:1.4cqw;justify-content:center;margin-top:2.4cqw;font-size:2.5cqw;font-weight:700;color:var(--vien);white-space:nowrap}
 .hh span{white-space:nowrap;background:rgba(255,248,230,.85);border:.25cqw solid rgba(200,150,46,.7);border-radius:99px;padding:.15cqw 1.4cqw}
@@ -213,7 +206,6 @@ button{font:inherit;color:inherit}
 .dau-thang .am-thang{font-size:3.1cqw;opacity:.85;margin-bottom:3cqw}
 .dau-thang .canh-thu{padding-bottom:0;margin-bottom:-.2cqw}
 .dau-thang .canh-thu::after{display:none}
-.dau-thang .canh-thu .spx>b.dat{display:none}
 .vung-luoi{position:relative;background-size:cover;background-position:center}
 .vung-luoi::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(249,242,224,.50) 0,rgba(249,242,224,.38) 100%)}
 .vung-luoi>*{position:relative}
@@ -320,7 +312,7 @@ class LichBlocXuaCard extends HTMLElement {
     dat();
     const apToc = () => R.querySelectorAll(".spx").forEach((e) => {
       const fk = (+e.dataset.fps || 1) * Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
-      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(3) + "s"); e.style.setProperty("--dd", (KHUNG_BUOC / fk / 3).toFixed(3) + "s");
+      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(3) + "s");
     });
     banh.addEventListener("click", (e) => { e.stopPropagation(); panel.hidden = !panel.hidden; banh.classList.toggle("mo", !panel.hidden); });
     panel.addEventListener("pointerdown", (e) => e.stopPropagation());
