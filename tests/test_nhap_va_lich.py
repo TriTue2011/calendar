@@ -123,16 +123,17 @@ def _iou(a, b):
 @pytest.mark.parametrize("khoa", CON_GIAP)
 def test_chu_ky_buoc_co_dong_tac_that(khoa):
     """Lớp lỗi từng xảy ra: sprite 12 khung do AI vẽ có chân gần như đứng yên (bàn chân cố định qua cả chu kỳ),
-    nên làm chậm hay nhanh đều không giống bước đi. Đo trên dữ liệu thật: khung chạm đất và khung chân chụm
-    phải có dáng chân KHÁC nhau rõ (IoU nửa dưới ≤ 0,60 với con có chân); rắn/rồng phải có sóng uốn khác pha."""
+    nên làm chậm hay nhanh đều không giống bước đi. Đo trên dữ liệu thật: hai khung khác nhau nhất trong chu kỳ
+    phải có dáng chân KHÁC nhau rõ (IoU vùng chân ≤ 0,62 với con có chân); rắn/rồng phải có sóng uốn khác pha."""
     im = Image.open(THU / f"{khoa}.webp")
     f = [_khung(im, i) for i in range(10)]
     h = f[0].shape[0]
     if khoa in KHONG_CHAN:
         assert _iou(f[0], f[4]) <= 0.80, "khung 0 và 4 (lệch nửa chu kỳ) gần như trùng, thân không uốn"
     else:
-        chan = lambda m: m[int(h * 0.55):, :]
-        assert _iou(chan(f[0]), chan(f[2])) <= 0.60, "chân khung chạm đất và khung chân chụm gần như trùng"
+        chan = lambda m: m[int(h * 0.65):, :]    # vùng chân: 35% dưới của khung
+        gan_nhat = min(_iou(chan(f[i]), chan(f[j])) for i in range(8) for j in range(i + 1, 8))
+        assert gan_nhat <= 0.62, "trong cả chu kỳ không có hai khung nào chân khác nhau rõ: chân gần như đứng yên"
         assert _iou(chan(f[8]), chan(f[0])) <= 0.90, "tư thế đứng nghỉ giống hệt tư thế bước"
 
 

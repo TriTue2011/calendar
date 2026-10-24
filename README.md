@@ -24,7 +24,7 @@ Xé tờ (nhấc mép, lật bay lên để lộ tờ ngày hôm sau) và lật 
 <p align="center"><img src="docs/anh/xe-to.webp" alt="Các mốc xé tờ"></p>
 <p align="center"><img src="docs/anh/lat-thang.webp" alt="Các mốc lật tháng"></p>
 
-Mười hai con giáp, mỗi con một sprite 10 khung: 8 khung của một chu kỳ bước thật (chạm đất, hạ thấp, chân chụm, nhấc cao, rồi lặp lại với chân kia dẫn trước; chân và tay phía xa vẽ sẫm hơn nên thấy rõ hai chân luân phiên; ngựa phi có pha gom chân; rắn và rồng uốn sóng từ đầu về đuôi) cùng 2 khung đứng nghỉ:
+Mười hai con giáp, mỗi con một sprite 10 khung: 8 khung của một chu kỳ bước thật (chạm đất, hạ thấp, chân chụm, nhấc cao, rồi lặp lại với chân kia dẫn trước; chân và tay phía xa vẽ sẫm hơn nên thấy rõ các chân luân phiên; thú bốn chân đi nhịp so le, mỗi chân lệch pha một phần tư vòng nên bốn bàn chân luôn ở bốn chỗ khác nhau; ngựa phi có pha gom chân; rắn và rồng uốn sóng từ đầu về đuôi) cùng 2 khung đứng nghỉ:
 
 <p align="center"><img src="docs/anh/12-con-giap.webp" alt="Mười hai con giáp"></p>
 
@@ -75,7 +75,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 
 ## Nhẹ cho dashboard
 
-- Con vật là **sprite WebP** (10 khung, khoảng 1,6 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
+- Con vật là **sprite WebP** (10 khung, khoảng 1,7 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
 - Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng và thở nhẹ (hai khung đứng nghỉ mờ chuyển qua lại); thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Đo trong Chrome không GPU: luồng chính ~2,8% khi con vật chạy, 0,0% khi nghỉ (hai thẻ cùng lúc).
 
