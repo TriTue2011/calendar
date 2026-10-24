@@ -43,6 +43,8 @@ from .nhap_db import convert_legacy_row, read_legacy_events
 
 _LOGGER = logging.getLogger(__name__)
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 UI_URL_ROOT = "/lich_viet_ui"
 UI_DIR_PATH = "frontend"
 PLATFORMS: list[Platform] = [Platform.SENSOR]
