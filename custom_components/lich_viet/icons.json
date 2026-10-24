@@ -2,6 +2,9 @@
   "services": {
     "convert_date": {
       "service": "mdi:calendar-sync"
+    },
+    "nhap_tu_amlich_db": {
+      "service": "mdi:database-import"
     }
   }
 }

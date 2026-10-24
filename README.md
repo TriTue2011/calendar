@@ -6,9 +6,27 @@
 
 - **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm).
 - **Lịch để bàn**: lịch tháng gáy lò xo, lật tờ qua gáy khi đổi tháng, chạm một ngày để xem chi tiết.
+- **Ảnh nền phong cảnh theo con giáp**: mỗi con giáp có 12 ảnh nền (12 tháng: đào Tết, đèn lồng, sen, phượng, trăng rằm, lúa chín, cúc, lá thu…) hợp với nơi ở của nó. Ảnh chỉ phủ phần đầu tờ bloc (đến đường gạch dưới dòng âm lịch) và khu lưới ngày của lịch để bàn, có lớp giấy mờ phủ lên để số ngày luôn rõ.
 - **Con giáp theo ngày**: mỗi tờ hiện con giáp của *ngày* đó (kèm huy hiệu tháng, năm), đổi liên tục khi sang ngày khác. Ngựa phi nước đại, các con khác bước đi; đều là giống đực.
 
 Kết hợp hai nguồn: lõi tính âm lịch, cảm biến sự kiện và các thẻ gốc của [khaisilk1910/am-lich-viet-nam](https://github.com/khaisilk1910/am-lich-viet-nam) (MIT), cùng ý tưởng sự kiện lặp hằng tháng và thực thể Lịch từ tích hợp `amlich` của smarthomeblack. Phần thêm: kiểu lặp hằng tháng, thực thể Lịch, nhập sự kiện cũ, hai thẻ mới.
+
+## Hình ảnh
+
+<p align="center">
+  <img src="docs/anh/bloc.webp" width="280" alt="Lịch bloc">
+  &nbsp;&nbsp;
+  <img src="docs/anh/de-ban.webp" width="300" alt="Lịch để bàn">
+</p>
+
+Xé tờ (nhấc mép, lật bay lên để lộ tờ ngày hôm sau) và lật tháng qua gáy lò xo:
+
+<p align="center"><img src="docs/anh/xe-to.webp" alt="Các mốc xé tờ"></p>
+<p align="center"><img src="docs/anh/lat-thang.webp" alt="Các mốc lật tháng"></p>
+
+Mười hai con giáp, mỗi con một sprite 12 khung (ngựa phi nước đại, các con còn lại bước đi):
+
+<p align="center"><img src="docs/anh/12-con-giap.webp" alt="Mười hai con giáp"></p>
 
 ## Cài đặt
 
@@ -52,13 +70,13 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 
 ## Nhẹ cho dashboard
 
-- Con vật là **sprite WebP** (12 khung, 2,1 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con của ngày đó.
+- Con vật là **sprite WebP** (12 khung, 2,1 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
 - Con vật chạy vài giây rồi nghỉ; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Đo trong Chrome không GPU: luồng chính ~2,8% khi con vật chạy, 0,0% khi nghỉ (hai thẻ cùng lúc).
 
 ## Giới hạn đã biết
 
-- Hình con giáp do mô hình AI vẽ (phong cách chibi Tết, giống đực); bản gốc nằm trong `custom_components/lich_viet/frontend/thu/`. Muốn đổi, thay tệp `<khoa>.webp` cùng quy cách (lưới 4×3 khung, nền trong suốt). Khoá: `ty suu dan mao thin ran ngo mui than ga cho heo`.
+- Hình con giáp do mô hình AI vẽ (phong cách chibi Tết, giống đực); bản gốc nằm trong `custom_components/lich_viet/frontend/thu/`. Muốn đổi, thay tệp `<khoa>.webp` cùng quy cách (lưới 4×3 khung, nền trong suốt). Ảnh nền nằm ở `frontend/nen/<khoa>-<tháng>.webp` (12 ảnh mỗi con, tỉ lệ 2:1). Khoá: `ty suu dan mao thin ran ngo mui than ga cho heo`.
 - Đã kiểm bằng 42 test (gồm 8 test chạy trong Home Assistant giả lập: nhập sự kiện, thực thể Lịch, cảm biến, dịch vụ nhập) và Chrome không đầu cho hai thẻ. **Chưa chạy trong Home Assistant thật của bạn**: màn hình cấu hình bằng tay (thêm sự kiện qua giao diện) và việc đăng ký thẻ trên dashboard thật chưa được thử.
 - Âm lịch tính cho năm 1800–2199.
 

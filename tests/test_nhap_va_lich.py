@@ -105,3 +105,16 @@ def test_sprite_con_giap_day_du_va_nhe(khoa):
     assert im.format == "WEBP" and im.mode in ("RGBA", "LA") and im.width % 4 == 0 and im.height % 3 == 0
     assert p.stat().st_size < 300_000                      # mỗi sprite sheet dưới 300 KB
     assert im.getchannel("A").getextrema()[0] == 0          # có vùng trong suốt (đã bỏ nền)
+
+
+NEN = Path(__file__).resolve().parent.parent / "custom_components" / "lich_viet" / "frontend" / "nen"
+
+
+@pytest.mark.parametrize("khoa", CON_GIAP)
+def test_anh_nen_du_12_thang_va_nhe(khoa):
+    for thang in range(1, 13):
+        p = NEN / f"{khoa}-{thang}.webp"
+        assert p.exists(), f"thiếu {p.name}"
+        assert p.stat().st_size < 80_000, f"{p.name} quá nặng"
+        w, h = Image.open(p).size
+        assert 1.8 <= w / h <= 2.2, f"{p.name} sai tỉ lệ 2:1 ({w}x{h})"

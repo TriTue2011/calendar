@@ -16,6 +16,10 @@ const THU_ANH = {
   than: { cot: 4, hang: 3, fps: 10 }, ga: { cot: 4, hang: 3, fps: 10 }, cho: { cot: 4, hang: 3, fps: 11 }, heo: { cot: 4, hang: 3, fps: 10 },
 };
 const GOC = new URL("./thu/", import.meta.url).href;
+const GOC_NEN = new URL("./nen/", import.meta.url).href;
+// ảnh nền phong cảnh: mỗi con giáp 12 ảnh, ảnh n = tháng dương lịch n; chỉ phủ phần trên đường gạch
+const urlNenAnh = (khoa, thang) => `${GOC_NEN}${khoa}-${thang}.webp`;
+const nenTren = (khoa, thang) => `background-image:url('${urlNenAnh(khoa, thang)}')`;
 const LE_NGHI_DL = new Set(["1/1", "30/4", "1/5", "2/9"]);
 const LE_NGHI_AL = new Set(["1/1", "2/1", "3/1", "10/3"]);
 const THANG = ["", "Một", "Hai", "Ba", "Tư", "Năm", "Sáu", "Bảy", "Tám", "Chín", "Mười", "M. Một", "Chạp"];
@@ -125,6 +129,13 @@ button{font:inherit;color:inherit}
 .am{text-align:center;font-size:4.7cqw;font-weight:700;color:var(--vien);line-height:1.25}
 .am small{display:block;font-size:3.5cqw;font-weight:500;color:var(--muc);opacity:.85;letter-spacing:.02em}
 .le{margin:.4cqw auto 0;padding:.5cqw 3cqw;border-radius:99px;background:var(--do);color:#fff3d6;font-size:3.5cqw;font-weight:700;letter-spacing:.04em;text-align:center;max-width:92%}
+.cot-thu{display:flex;flex-direction:column;align-self:end;min-width:0}
+.cot-thu .canh-thu{align-self:stretch}
+.phan-tren{position:relative;flex:1 1 auto;margin:-5.8cqw -4.6cqw 0;padding:7cqw 4.6cqw 1.6cqw;display:flex;flex-direction:column;justify-content:space-between;gap:.8cqw;background-color:rgba(246,237,214,.0);background-size:cover;background-position:center;border-radius:1.4cqw 1.4cqw 0 0}
+.phan-tren::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(247,238,215,.30) 0,rgba(247,238,215,.10) 42%,rgba(247,238,215,.28) 100%)}
+.phan-tren .dau-to,.phan-tren .thu-ngay,.phan-tren .am,.phan-tren .am small,.phan-tren .le{text-shadow:0 0 .7cqw rgba(252,246,232,1),0 0 1.6cqw rgba(252,246,232,.95),0 0 3cqw rgba(252,246,232,.8)}
+.phan-tren .so{text-shadow:0 0 1.2cqw rgba(252,246,232,1),0 0 3cqw rgba(252,246,232,.9),0 .5cqw 0 rgba(255,255,255,.5)}
+.phan-tren>*{position:relative}
 .khung-thu{position:relative;flex:0 0 auto;min-height:0;display:grid;grid-template-columns:44% 1fr;gap:2cqw;align-items:end;border-top:.35cqw dotted rgba(138,42,28,.45);border-bottom:.35cqw dotted rgba(138,42,28,.45);padding:1cqw 0}
 .canh-thu{position:relative;align-self:end;overflow:visible;padding-bottom:1.2cqw}
 .canh-thu::after{content:"";position:absolute;left:-4%;right:-4%;bottom:.4cqw;height:.9cqw;border-radius:99px;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 5cqw,transparent 5cqw 8cqw);animation:duong 1.1s linear infinite;animation-play-state:paused;opacity:.7}
@@ -134,8 +145,8 @@ button{font:inherit;color:inherit}
 .hh span{background:rgba(255,248,230,.85);border:.25cqw solid rgba(200,150,46,.7);border-radius:99px;padding:.15cqw 1.4cqw}
 .dau-thang .hh{justify-content:flex-end;flex-wrap:wrap;color:#fff1cf}.dau-thang .hh span{background:rgba(0,0,0,.22);border-color:rgba(255,230,160,.6)}
 .thongtin{font-size:3.4cqw;line-height:1.35;display:flex;flex-direction:column;gap:.9cqw;align-self:center}
-.thongtin div{display:flex;gap:1.2cqw}
-.thongtin b{color:var(--vien);min-width:11cqw;font-weight:700}
+.thongtin>div:not(.gio){display:grid;grid-template-columns:17cqw 1fr;gap:1cqw}
+.thongtin b{color:var(--vien);white-space:nowrap;font-weight:700}
 .gio{display:grid;grid-template-columns:repeat(6,1fr);gap:.8cqw;margin-top:.4cqw}
 .gio span{font-size:2.9cqw;text-align:center;padding:.5cqw 0;border-radius:.8cqw;background:rgba(138,42,28,.07);color:rgba(45,27,16,.45)}
 .gio span.hd{background:var(--vien);color:#fff4d9;font-weight:700}
@@ -174,17 +185,23 @@ button{font:inherit;color:inherit}
 .dau-thang .am-thang{font-size:3.1cqw;opacity:.85;margin-bottom:3cqw}
 .dau-thang .canh-thu{padding-bottom:0;margin-bottom:-.2cqw}
 .dau-thang .canh-thu::after{display:none}
+.vung-luoi{position:relative;background-size:cover;background-position:center}
+.vung-luoi::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(249,242,224,.50) 0,rgba(249,242,224,.38) 100%)}
+.vung-luoi>*{position:relative}
 .luoi-thu{display:grid;grid-template-columns:repeat(7,1fr);padding:1.6cqw 2cqw 0;gap:0}
 .luoi-thu .th{font-size:3cqw;font-weight:800;text-align:center;color:var(--vien);padding:1.2cqw 0}
 .luoi-thu .th.cn{color:var(--do)}
 .o{position:relative;aspect-ratio:1/1.08;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2cqw;cursor:pointer;border-radius:1.4cqw;padding:0;color:inherit;transition:background .15s,transform .12s}
 .o:hover{background:rgba(200,150,46,.18)}.o:active{transform:scale(.94)}
+.o b,.o small,.luoi-thu .th{text-shadow:0 0 .6cqw rgba(252,246,232,1),0 0 1.3cqw rgba(252,246,232,.98),0 0 2.4cqw rgba(252,246,232,.85)}
+.o.nay b,.o.nay small{text-shadow:none}
 .o b{font-size:5.4cqw;font-weight:800;font-family:"Playfair Display",Georgia,serif;line-height:1;font-variant-numeric:lining-nums}
 .o small{font-size:2.6cqw;opacity:.7;line-height:1}
-.o.la{opacity:.32}.o.cn b,.o.nghi b{color:var(--do)}.o.t7 b{color:#1d4a63}
+.o.la{opacity:.55}.o.cn b,.o.nghi b{color:var(--do)}.o.t7 b{color:#1d4a63}
 .o.mung1 small{color:var(--do);font-weight:800;opacity:1}
 .o.nay{background:radial-gradient(circle at 50% 50%,#d6332a 0 62%,transparent 64%)}.o.nay b,.o.nay small{color:#fff6dc;opacity:1}
 .o.chon{box-shadow:inset 0 0 0 .5cqw var(--vang);background:rgba(200,150,46,.18)}
+.o.nay.chon{background:radial-gradient(circle at 50% 50%,#d6332a 0 62%,rgba(200,150,46,.18) 64%)}
 .o i.cs{position:absolute;top:1cqw;right:1.6cqw;width:1.6cqw;height:1.6cqw;border-radius:50%;background:var(--xanh)}
 .chitiet{margin:1.4cqw 3cqw 3.4cqw;padding:2cqw 2.6cqw;border-radius:1.4cqw;background:rgba(255,248,230,.75);box-shadow:inset 0 0 0 .3cqw rgba(200,150,46,.5);font-size:3.2cqw;line-height:1.38}
 .chitiet h4{margin:0 0 .8cqw;color:var(--vien);font-size:3.8cqw}
@@ -219,7 +236,7 @@ class LichBlocXuaCard extends HTMLElement {
   setConfig(c) {
     this._cfg = { mode: "bloc", hoat_hoa: true, nut: true, rong: 380, ...c };
     if (!["bloc", "de_ban"].includes(this._cfg.mode)) throw new Error("mode phải là bloc hoặc de_ban");
-    this._ready = false; if (this.isConnected) this._dung();
+    this._ready = false; if (this.isConnected && this._hass) { this._ready = true; this._dung(); }
   }
   set hass(h) { this._hass = h; if (!this._ready) { this._ready = true; this._dung(); } }
 
@@ -237,11 +254,12 @@ class LichBlocXuaCard extends HTMLElement {
 
   // ----- dựng khung -----
   async _dung() {
-    const c = this._cfg;
+    const c = this._cfg, gen = (this._gen = (this._gen || 0) + 1);
     this.shadowRoot.innerHTML = `<style>${CSS}</style><div class="ban" style="--rong:${+c.rong || 380}px"><div class="goc"></div></div>`;
     this._goc = this.shadowRoot.querySelector(".goc"); this._banEl = this.shadowRoot.querySelector(".ban");
     this._ngay = this._ngay || new Date();
-    if (c.mode === "de_ban") await this._veDeBan(); else await this._veBloc();
+    if (c.mode === "de_ban") await this._veDeBan(gen); else await this._veBloc(gen);
+    if (gen !== this._gen) return;               // đã có lần dựng mới hơn
     this._datGioNuaDem(); this._lichThu(); this._capNhatChay(); this._gan();
     this._taiSuKien();
   }
@@ -318,14 +336,16 @@ class LichBlocXuaCard extends HTMLElement {
     }).join("");
     const al = tt.al, loai = tt.cn || tt.nghi ? "do" : tt.t7 ? "t7" : "";
     return `
-      <div class="giay to"><div class="vien-trong"></div><div class="noidung">
+      <div class="giay to"><div class="noidung">
+        <div class="phan-tren" style="${nenTren(khoa, tt.mm)}">
         <div class="dau-to"><span>Tháng ${tt.mm}</span><b>${tt.yy}</b><span>${esc(tt.namCan)}</span></div>
         <div class="thu-ngay">${tt.thu}</div>
         <div class="so ${loai}">${tt.dd}</div>
         <div class="am">Ngày ${al.day} tháng ${al.month}${al.leap ? " nhuận" : ""} âm lịch<small>Ngày ${esc(tt.canChi[0])} · tháng ${esc(tt.canChi[1])} · năm ${esc(tt.canChi[2])} · tiết ${esc(tt.tiet)}</small></div>
         ${tt.le.length ? `<div class="le">${esc(tt.le.slice(0, 2).join(" · "))}</div>` : ""}
+        </div>
         <div class="khung-thu">
-          <div class="canh-thu">${hinh}<div class="hh">${huyHieu(tt)}</div></div>
+          <div class="cot-thu"><div class="canh-thu">${hinh}</div><div class="hh">${huyHieu(tt)}</div></div>
           <div class="thongtin">
             <div><b>Trực</b><span>${esc(tt.truc)}</span></div>
             <div><b>Sao</b><span>${esc(tt.sao)} ${tt.saoDanhGia ? `(${esc(tt.saoDanhGia.split(" ")[0])})` : ""}</span></div>
@@ -336,11 +356,12 @@ class LichBlocXuaCard extends HTMLElement {
         <div class="nenky"><p><b>Nên:</b> ${esc(tt.tot.split(".")[0] || "—")}</p><p class="ky"><b>Kỵ:</b> ${esc(tt.xau.split(".")[0] || "—")}</p></div>
         <div class="sukien" data-sk="${iso(d)}"></div>
         <div class="cadao">${tt.caDao}</div>
-      </div></div>`;
+      </div><div class="vien-trong"></div></div>`;
   }
-  async _veBloc() {
+  async _veBloc(gen = this._gen) {
     this._theoHomNay = cungNgay(this._ngay, new Date());
     const tren = await this._traTo(this._ngay), duoi = await this._traTo(congNgay(this._ngay, 1));
+    if (gen !== this._gen) return;
     this._goc.innerHTML = `
       <div class="chong"><div class="ghim"><i></i></div>
         <div class="nen-to"><div class="to-ao" style="visibility:hidden"></div>
@@ -396,10 +417,11 @@ class LichBlocXuaCard extends HTMLElement {
   }
 
   // ======================= ĐỂ BÀN =======================
-  async _veDeBan() {
+  async _veDeBan(gen = this._gen) {
     const n = this._ngay; this._thang = this._thang || { y: n.getFullYear(), m: n.getMonth() };
     this._chonNgay = this._chonNgay || n;
     const html = await this._traThang(this._thang.y, this._thang.m);
+    if (gen !== this._gen) return;
     this._goc.innerHTML = `
       <div class="de-ban"><div class="de-khung">
         <div class="lo-xo">${"<i></i>".repeat(14)}</div>
@@ -419,11 +441,12 @@ class LichBlocXuaCard extends HTMLElement {
     }));
   }
   async _doiThuTheoNgay(d) {
-    const kh = this._goc.querySelector(".dau-thang .canh-thu"); if (!kh) return;
+    const dt = this._goc.querySelector(".dau-thang"), kh = dt && dt.querySelector(".canh-thu"); if (!kh) return;
     const tt = thongTinNgay(d), html = await hinhThu(chiThu(tt, this._cfg.con_giap), this._chayThu !== false);
     const khoi = kh.querySelector(".khoi-thu"), hh = kh.querySelector(".hh");
     if (khoi) { khoi.innerHTML = html; khoi.classList.remove("hien"); void khoi.offsetWidth; khoi.classList.add("hien"); }
     if (hh) hh.innerHTML = huyHieu(tt);
+    const vl = this._goc.querySelector(".vung-luoi"); if (vl) vl.setAttribute("style", nenTren(chiThu(tt, this._cfg.con_giap), d.getMonth() + 1));
     this._capNhatChay();
   }
   _chiTiet(d) {
@@ -446,7 +469,7 @@ class LichBlocXuaCard extends HTMLElement {
     const cuoi = (7 - ((lech + so) % 7)) % 7; for (let i = 1; i <= cuoi; i++) cells += this._o(new Date(y, m + 1, i), true, now);
     return `
       <div class="dau-thang"><div><div class="t">Tháng ${m + 1}</div><div class="n">${y} · ${esc(getYearCanChi(a1.year))}</div><div class="am-thang">Âm lịch: tháng ${a1.month}${a1.leap ? " nhuận" : ""} – ${a2.month}${a2.leap ? " nhuận" : ""}</div></div><div class="canh-thu"><div class="khoi-thu">${hinh}</div><div class="hh">${huyHieu(ttThu)}</div></div></div>
-      <div class="luoi-thu">${hdr}${cells}</div>
+      <div class="vung-luoi" style="${nenTren(chiThu(ttThu, this._cfg.con_giap), m + 1)}"><div class="luoi-thu">${hdr}${cells}</div></div>
       ${this._chiTiet(this._chonNgay.getMonth() === m && this._chonNgay.getFullYear() === y ? this._chonNgay : (now.getMonth() === m && now.getFullYear() === y ? now : dau))}`;
   }
   _o(d, la, now) {
