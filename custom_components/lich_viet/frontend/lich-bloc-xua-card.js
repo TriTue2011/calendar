@@ -62,26 +62,30 @@ const gioHienTai = (gio, now) => { const h = now.getHours(); return gio.find((g)
 // ---------- hình con giáp: sprite WebP (nếu có), không thì bộ vector dự phòng ----------
 let _uid = 0;
 const KHUNG_BUOC = 16;   // khung 0–15 của sheet là chu kỳ bước; 16–17 là đứng nghỉ
-const viTri = (j, cot, hang) => `${cot > 1 ? (j % cot * 100 / (cot - 1)).toFixed(2) : 0}% ${hang > 1 ? (Math.floor(j / cot) * 100 / (hang - 1)).toFixed(2) : 0}%`;
+// Tư thế đổi bằng transform của dải sprite trong một «cửa sổ» (không dùng background-position vì nó chạy trên luồng chính, còn mờ chuyển opacity chạy trên luồng ghép hình:
+// hai đồng hồ riêng lệch vài mili giây là thoáng hiện nhầm tư thế ở độ đậm đầy đủ, nghe như «đùng»). transform + opacity cùng ở luồng ghép hình và cùng MỘT chu kỳ.
+const viDich = (j, cot, hang) => `translate(${(-(j % cot) * 100 / cot).toFixed(4)}%,${(-Math.floor(j / cot) * 100 / hang).toFixed(4)}%)`;
 function keyframesSprite(ten, cot, hang, dich = 0) {
   let s = `@keyframes ${ten}{`;
-  for (let i = 0; i < KHUNG_BUOC; i++) s += `${(i * 100 / KHUNG_BUOC).toFixed(3)}%{background-position:${viTri((i + dich) % KHUNG_BUOC, cot, hang)}}`;
+  for (let i = 0; i < KHUNG_BUOC; i++) s += `${(i * 100 / KHUNG_BUOC).toFixed(4)}%{transform:${viDich((i + dich) % KHUNG_BUOC, cot, hang)}}`;
   return s + "}";
 }
+// răng cưa mờ chuyển: mỗi khung opacity 0→1 tuyến tính rồi về 0 ngay lúc đổi tư thế; cùng thời lượng với bước nhảy nên khớp tuyệt đối
+const RANG_CUA = (() => { let r = "@keyframes spx-ramp{"; for (let i = 0; i < KHUNG_BUOC; i++) r += `${(i * 100 / KHUNG_BUOC).toFixed(4)}%{opacity:0}${((i + 1) * 100 / KHUNG_BUOC - 0.0005).toFixed(4)}%{opacity:1}`; return r + "100%{opacity:0}}"; })();
 const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang) + keyframesSprite("spn-" + k, v.cot, v.hang, 1)).join("\n") + `
 .spx{position:relative;display:block;width:100%}
-.spx>i{position:absolute;inset:0;background-image:var(--bg);background-size:var(--bs);background-repeat:no-repeat;background-position:var(--p4)}
-.spx>i.b{opacity:0;background-position:var(--p5);animation:spx-tho 4.6s ease-in-out infinite}
-.spx.chay>i.a{animation:var(--spa) var(--sd) step-end infinite}
-.spx.chay>i.b{opacity:0;animation:var(--spb) var(--sd) step-end infinite,spx-ramp var(--ft) linear infinite}   /* đang bước: tư thế kế tiếp mờ vào ở nửa sau mỗi khung */
-.dung .spx>i,.spx.dung>i{animation-play-state:paused}
+.spx .vo{position:absolute;inset:0;overflow:hidden}
+.spx .vo>i{position:absolute;left:0;top:0;width:var(--cw);height:var(--ch);background:var(--bg) 0 0/100% 100% no-repeat;will-change:transform;transform:var(--t16)}
+.spx .vo.b{opacity:0;will-change:opacity;animation:spx-tho 4.6s ease-in-out infinite}
+.spx .vo.b>i{transform:var(--t17)}
+.spx.chay .vo.a>i{animation:var(--spa) var(--sd) step-end infinite}
+.spx.chay .vo.b{opacity:0;animation:spx-ramp var(--sd) linear infinite}   /* đang bước: tư thế kế tiếp mờ vào suốt mỗi khung */
+.spx.chay .vo.b>i{animation:var(--spb) var(--sd) step-end infinite}
+.dung .spx .vo,.dung .spx .vo>i,.spx.dung .vo,.spx.dung .vo>i{animation-play-state:paused}
 @keyframes spx-tho{0%,100%{opacity:0}50%{opacity:1}}
-@keyframes spx-ramp{0%{opacity:0}100%{opacity:1}}
-.sp:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
-.sp{display:block;width:100%;background-repeat:no-repeat;background-position:0 0;image-rendering:auto}
-.sp.chay{animation-name:var(--sp);animation-duration:var(--sd);animation-iteration-count:infinite;animation-timing-function:step-end}
+${RANG_CUA}
 .thu-hop{position:relative;width:100%}
-.thu-hop.dung .sp,.dung .sp{animation-play-state:paused}
+.thu-hop.dung{animation-play-state:paused}
 `;
 const spriteCache = new Map(); // khoa -> Promise<{rong, cao} | null>
 function dongSprite(khoa) {
@@ -101,7 +105,7 @@ async function hinhThu(khoa, chay, heSo = 1) {
   if (sp) {
     const c = THU_ANH[khoa], n = KHUNG_BUOC;
     const fk = c.fps * Math.min(4, Math.max(0.25, +heSo > 0 ? +heSo : 1));   // toc_do giới hạn 0,25–4
-    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--ft:${(1 / fk).toFixed(3)}s;--spa:sp-${khoa};--spb:spn-${khoa};--p4:${viTri(KHUNG_BUOC, c.cot, c.hang)};--p5:${viTri(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i></div>`;
+    return `<div class="spx${chay ? " chay" : ""}" data-fps="${c.fps}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--cw:${c.cot * 100}%;--ch:${c.hang * 100}%;--sd:${(n / fk).toFixed(5)}s;--spa:sp-${khoa};--spb:spn-${khoa};--t16:${viDich(KHUNG_BUOC, c.cot, c.hang)};--t17:${viDich(KHUNG_BUOC + 1, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><div class="vo a"><i></i></div><div class="vo b"><i></i></div></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
@@ -314,7 +318,7 @@ class LichBlocXuaCard extends HTMLElement {
     dat();
     const apToc = () => R.querySelectorAll(".spx").forEach((e) => {
       const fk = (+e.dataset.fps || 1) * Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
-      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(3) + "s"); e.style.setProperty("--ft", (1 / fk).toFixed(3) + "s");
+      e.style.setProperty("--sd", (KHUNG_BUOC / fk).toFixed(5) + "s");
     });
     banh.addEventListener("click", (e) => { e.stopPropagation(); panel.hidden = !panel.hidden; banh.classList.toggle("mo", !panel.hidden); });
     panel.addEventListener("pointerdown", (e) => e.stopPropagation());
@@ -328,7 +332,7 @@ class LichBlocXuaCard extends HTMLElement {
   _capNhatChay() {
     const chay = this._hien && !document.hidden && this._cfg.hoat_hoa !== false;
     this._banEl?.classList.toggle("chay-on", chay);
-    this.shadowRoot.querySelectorAll(".thu,.thu-hop,.sp,.spx").forEach((e) => e.classList.toggle("dung", !chay));
+    this.shadowRoot.querySelectorAll(".thu,.thu-hop,.spx").forEach((e) => e.classList.toggle("dung", !chay));
   }
   _kiemTraNgay() {
     const now = new Date();
@@ -347,7 +351,7 @@ class LichBlocXuaCard extends HTMLElement {
     const ng = this._cai("nghi_giay"), nghiMs = (ng === 0 || ng === "0" ? 0 : +ng > 0 ? +ng : 25) * 1000;   // nghỉ bao lâu rồi chạy lại; 0 = chạy liên tục
     const doi = (chay) => {
       this._chayThu = chay; this._banEl?.classList.toggle("dang-chay", chay);
-      this.shadowRoot.querySelectorAll(".sp,.spx").forEach((e) => e.classList.toggle("chay", chay));
+      this.shadowRoot.querySelectorAll(".spx").forEach((e) => e.classList.toggle("chay", chay));
       this.shadowRoot.querySelectorAll(".thu").forEach((e) => { e.classList.toggle("di", chay); e.classList.toggle("nghi", !chay); });
       if (!nghiMs) return;   // không nghỉ: cứ chạy mãi
       this._thuTimer = setTimeout(() => doi(!chay), (chay ? chayMs : nghiMs) * (0.9 + Math.random() * 0.2));

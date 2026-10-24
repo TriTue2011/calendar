@@ -65,3 +65,14 @@ def test_tuy_chon_chuyen_dong_co_trong_the_va_readme(khoa):
     assert khoa in the and f"{khoa}:" in readme
     if khoa != "cai_dat":
         assert f'data-k="{khoa}"' in the or f"data-k=\"${{k}}\"" in the or f'"{khoa}"' in the
+
+
+def test_hoat_hoa_con_vat_chay_tren_luong_ghep_hinh_va_cung_mot_chu_ky():
+    """Thiết kế giữ cho chuyển động mượt trên điện thoại (đo bằng vết hiệu năng Chrome, 2 giây hoạt họa: bản dùng background-position vẽ lại 135 lần ở luồng chính,
+    bản transform + opacity 0 lần): tư thế đổi bằng transform, mờ chuyển bằng opacity, cả hai CÙNG thời lượng (--sd) nên không thể lệch nhịp."""
+    the = (GOC / "frontend" / "lich-bloc-xua-card.js").read_text(encoding="utf-8")
+    khung = the[the.index("function keyframesSprite"):the.index("const SPRITE_CSS")]
+    assert "transform:" in khung and "background-position" not in khung
+    css = the[the.index("const SPRITE_CSS"):the.index(".thu-hop{position:relative")]
+    assert ".spx.chay .vo.b{opacity:0;animation:spx-ramp var(--sd) linear infinite}" in css and "step-end infinite" in css
+    assert "--ft" not in the, "mờ chuyển phải dùng chung --sd với bước đổi tư thế, không có đồng hồ riêng"
