@@ -102,7 +102,7 @@ def test_sprite_con_giap_day_du_va_nhe(khoa):
     p = THU / f"{khoa}.webp"
     assert p.exists(), f"thiếu {p.name}"
     im = Image.open(p)
-    assert im.format == "WEBP" and im.mode in ("RGBA", "LA") and im.width % 3 == 0 and im.height % 2 == 0   # lưới 3×2: 4 khung bước + 2 khung đứng nghỉ
+    assert im.format == "WEBP" and im.mode in ("RGBA", "LA") and im.width % 5 == 0 and im.height % 2 == 0   # lưới 5×2: 8 khung bước + 2 khung đứng nghỉ
     assert p.stat().st_size < 300_000                      # mỗi sprite sheet dưới 300 KB
     assert im.getchannel("A").getextrema()[0] == 0          # có vùng trong suốt (đã bỏ nền)
 
@@ -112,8 +112,8 @@ KHONG_CHAN = {"ran", "thin"}
 
 def _khung(im, i):
     import numpy as np
-    fw, fh = im.width // 3, im.height // 2
-    return np.array(im.crop(((i % 3) * fw, (i // 3) * fh, (i % 3 + 1) * fw, (i // 3 + 1) * fh)).convert("RGBA"))[:, :, 3] > 40
+    fw, fh = im.width // 5, im.height // 2
+    return np.array(im.crop(((i % 5) * fw, (i // 5) * fh, (i % 5 + 1) * fw, (i // 5 + 1) * fh)).convert("RGBA"))[:, :, 3] > 40
 
 
 def _iou(a, b):
@@ -126,14 +126,14 @@ def test_chu_ky_buoc_co_dong_tac_that(khoa):
     nên làm chậm hay nhanh đều không giống bước đi. Đo trên dữ liệu thật: khung chạm đất và khung chân chụm
     phải có dáng chân KHÁC nhau rõ (IoU nửa dưới ≤ 0,60 với con có chân); rắn/rồng phải có sóng uốn khác pha."""
     im = Image.open(THU / f"{khoa}.webp")
-    f = [_khung(im, i) for i in range(6)]
+    f = [_khung(im, i) for i in range(10)]
     h = f[0].shape[0]
     if khoa in KHONG_CHAN:
-        assert _iou(f[0], f[2]) <= 0.80, "khung 0 và 2 gần như trùng, thân không uốn"
+        assert _iou(f[0], f[4]) <= 0.80, "khung 0 và 4 (lệch nửa chu kỳ) gần như trùng, thân không uốn"
     else:
         chan = lambda m: m[int(h * 0.55):, :]
-        assert _iou(chan(f[0]), chan(f[1])) <= 0.60, "chân khung chạm đất và khung chân chụm gần như trùng"
-        assert _iou(chan(f[4]), chan(f[0])) <= 0.90, "tư thế đứng nghỉ giống hệt tư thế bước"
+        assert _iou(chan(f[0]), chan(f[2])) <= 0.60, "chân khung chạm đất và khung chân chụm gần như trùng"
+        assert _iou(chan(f[8]), chan(f[0])) <= 0.90, "tư thế đứng nghỉ giống hệt tư thế bước"
 
 
 NEN = Path(__file__).resolve().parent.parent / "custom_components" / "lich_viet" / "frontend" / "nen"
