@@ -24,7 +24,7 @@ Xé tờ (nhấc mép, lật bay lên để lộ tờ ngày hôm sau) và lật 
 <p align="center"><img src="docs/anh/xe-to.webp" alt="Các mốc xé tờ"></p>
 <p align="center"><img src="docs/anh/lat-thang.webp" alt="Các mốc lật tháng"></p>
 
-Mười hai con giáp, mỗi con một sprite 10 khung: 8 khung của một chu kỳ bước thật (chạm đất, hạ thấp, chân chụm, nhấc cao, rồi lặp lại với chân kia dẫn trước; chân và tay phía xa vẽ sẫm hơn nên thấy rõ các chân luân phiên; thú bốn chân đi nhịp so le, mỗi chân lệch pha một phần tư vòng nên bốn bàn chân luôn ở bốn chỗ khác nhau; ngựa phi có pha gom chân; rắn và rồng uốn sóng từ đầu về đuôi) cùng 2 khung đứng nghỉ:
+Mười hai con giáp, mỗi con một sprite 10 khung: 8 khung của một chu kỳ bước thật (chạm đất, hạ thấp, chân chụm, nhấc cao, rồi lặp lại với chân kia dẫn trước; chân và tay phía xa vẽ sẫm hơn nên thấy rõ các chân luân phiên; thú bốn chân hai chân cùng bên bước cùng nhau, bên kia ngược pha; dáng bước được tính bằng toán (chân chạm đất trượt đều từ trước ra sau rồi nhấc vung về trước) và dùng làm sơ đồ xương cho mô hình vẽ; ngựa phi có pha gom chân; rắn và rồng uốn sóng từ đầu về đuôi) cùng 2 khung đứng nghỉ:
 
 <p align="center"><img src="docs/anh/12-con-giap.webp" alt="Mười hai con giáp"></p>
 
