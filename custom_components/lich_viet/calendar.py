@@ -32,7 +32,7 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Chỉ entry chính mới có thực thể Lịch tổng hợp."""
-    async_add_entities([LichVietCalendar(entry)])
+    async_add_entities([LichVietCalendar(entry)], update_before_add=True)   # tính sự kiện hôm nay ngay, không đợi lần thăm dò đầu
 
 
 def _option(entry: ConfigEntry, key: str, default: Any = None) -> Any:

@@ -50,6 +50,8 @@ Cảm biến đếm ngược (`sensor.<tên sự kiện>`) và thực thể Lị
 
 Gọi dịch vụ (quản trị viên) **Lịch Việt: Nhập sự kiện từ amlich cũ** (`lich_viet.nhap_tu_amlich_db`). Nó chỉ đọc `/config/events.db`, tạo sự kiện tương ứng, chạy lại không tạo trùng, và trả về số đã nhập / đã có / bị bỏ qua (sự kiện «một lần» chưa hỗ trợ nên bị bỏ qua kèm lý do).
 
+Nếu báo «đường dẫn không nằm trong thư mục Home Assistant cho phép», thêm thư mục chứa tệp vào `homeassistant: allowlist_external_dirs` trong `configuration.yaml` (ví dụ `/config`) rồi khởi động lại.
+
 ## Thẻ giao diện
 
 Thêm thẻ bằng giao diện (*Lịch bloc xưa*) hoặc YAML:

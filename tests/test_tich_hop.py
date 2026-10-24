@@ -55,6 +55,7 @@ async def test_thuc_the_lich_tra_su_kien_qua_dich_vu_calendar(hass: HomeAssistan
     await _nhap(hass, event_type="solar", event_name="Quốc khánh", event_day=2, event_month=9, event_repeat="yearly")
     await _dung_chinh(hass)
     assert hass.states.get("calendar.su_kien") is not None
+    # có sự kiện đang diễn ra thì trạng thái phải «on» ngay sau khi thêm, không đợi 1 giờ
     kq = await hass.services.async_call(
         "calendar", "get_events", {"entity_id": "calendar.su_kien", "start_date_time": "2026-01-01 00:00:00", "end_date_time": "2026-12-31 23:00:00"},
         blocking=True, return_response=True,
@@ -109,3 +110,12 @@ async def test_dich_vu_nhap_tu_choi_duong_dan_ngoai_va_file_hong(hass: HomeAssis
     hass.config.allowlist_external_dirs.add(str(tmp_path))
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(DOMAIN, "nhap_tu_amlich_db", {"path": str(tmp_path / "hong.db")}, blocking=True, return_response=True)
+
+
+async def test_thuc_the_lich_bat_ngay_khi_co_su_kien_hom_nay(hass: HomeAssistant, freezer):
+    freezer.move_to("2026-10-24 10:00:00+07:00")
+    await hass.config.async_set_time_zone("Asia/Ho_Chi_Minh")
+    await _nhap(hass, event_type="lunar", event_name="Rằm hằng tháng", event_day=15, event_month=1, event_repeat="monthly")   # 24/10/2026 = 15/9 âm
+    await _dung_chinh(hass)
+    st = hass.states.get("calendar.su_kien")
+    assert st.state == "on" and st.attributes["message"] == "Rằm hằng tháng"
