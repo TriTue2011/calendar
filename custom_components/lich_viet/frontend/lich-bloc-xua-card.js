@@ -10,11 +10,11 @@ import {
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 
 const THU_ANH = {
-  // mọi sprite sheet: lưới cot × hang khung, phát theo thứ tự; fps là tốc độ khi «chạy»
-  // fps = số khung mỗi giây; chu kỳ 12 khung = 12/fps giây (đi bộ ~3 giây một vòng, ngựa phi ~1,7 giây). Giữa hai khung có mờ chuyển (crossfade) nên chậm mà vẫn mượt. Có thể nhân thêm bằng cấu hình toc_do.
-  ngo: { cot: 4, hang: 3, fps: 7 }, ty: { cot: 4, hang: 3, fps: 4 }, suu: { cot: 4, hang: 3, fps: 3.5 }, dan: { cot: 4, hang: 3, fps: 4 },
-  mao: { cot: 4, hang: 3, fps: 4 }, thin: { cot: 4, hang: 3, fps: 4 }, ran: { cot: 4, hang: 3, fps: 4 }, mui: { cot: 4, hang: 3, fps: 4 },
-  than: { cot: 4, hang: 3, fps: 4 }, ga: { cot: 4, hang: 3, fps: 4 }, cho: { cot: 4, hang: 3, fps: 4 }, heo: { cot: 4, hang: 3, fps: 4 },
+  // Mỗi sprite sheet là lưới 3 cột × 2 hàng: khung 0–3 là MỘT CHU KỲ BƯỚC THẬT (chạm đất, chân chụm, chạm đất pha đối, chân chụm đối),
+  // khung 4–5 là hai tư thế đứng nghỉ (khung 5 hít vào). fps = số khung bước mỗi giây, nên một vòng chu kỳ = 4/fps giây.
+  ngo: { cot: 3, hang: 2, fps: 5 }, ty: { cot: 3, hang: 2, fps: 3 }, suu: { cot: 3, hang: 2, fps: 2.5 }, dan: { cot: 3, hang: 2, fps: 3 },
+  mao: { cot: 3, hang: 2, fps: 3 }, thin: { cot: 3, hang: 2, fps: 2.5 }, ran: { cot: 3, hang: 2, fps: 2.5 }, mui: { cot: 3, hang: 2, fps: 3 },
+  than: { cot: 3, hang: 2, fps: 3 }, ga: { cot: 3, hang: 2, fps: 3 }, cho: { cot: 3, hang: 2, fps: 3 }, heo: { cot: 3, hang: 2, fps: 3 },
 };
 const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
@@ -60,23 +60,26 @@ const gioHienTai = (gio, now) => { const h = now.getHours(); return gio.find((g)
 
 // ---------- hình con giáp: sprite WebP (nếu có), không thì bộ vector dự phòng ----------
 let _uid = 0;
+const KHUNG_BUOC = 4;   // khung 0–3 của sheet là chu kỳ bước; 4–5 là đứng nghỉ
+const viTri = (j, cot, hang) => `${cot > 1 ? (j % cot * 100 / (cot - 1)).toFixed(2) : 0}% ${hang > 1 ? (Math.floor(j / cot) * 100 / (hang - 1)).toFixed(2) : 0}%`;
 function keyframesSprite(ten, cot, hang, dich = 0) {
-  const n = cot * hang; let s = `@keyframes ${ten}{`;
-  for (let i = 0; i < n; i++) {
-    const j = (i + dich) % n, c = j % cot, r = Math.floor(j / cot);
-    s += `${(i * 100 / n).toFixed(3)}%{background-position:${cot > 1 ? (c * 100 / (cot - 1)).toFixed(2) : 0}% ${hang > 1 ? (r * 100 / (hang - 1)).toFixed(2) : 0}%}`;
-  }
+  let s = `@keyframes ${ten}{`;
+  for (let i = 0; i < KHUNG_BUOC; i++) s += `${(i * 100 / KHUNG_BUOC).toFixed(3)}%{background-position:${viTri((i + dich) % KHUNG_BUOC, cot, hang)}}`;
   return s + "}";
 }
 const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang) + keyframesSprite("spn-" + k, v.cot, v.hang, 1)).join("\n") + `
 .spx{position:relative;display:block;width:100%}
-.spx>i{position:absolute;inset:0;background-image:var(--bg);background-size:var(--bs);background-repeat:no-repeat;background-position:0 0}
-.spx>i.b{opacity:0}
+.spx>i{position:absolute;inset:0;background-image:var(--bg);background-size:var(--bs);background-repeat:no-repeat;background-position:var(--p4)}
+.spx>i.b{opacity:0;background-position:var(--p5);animation:spx-tho 4.6s ease-in-out infinite}
 .spx.chay>i.a{animation:var(--spa) var(--sd) step-end infinite}
 .spx.chay>i.b{animation:var(--spb) var(--sd) step-end infinite,spx-ramp var(--ft) linear infinite}
-.spx:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
-.dung .spx>i,.spx.dung>i{animation-play-state:paused}
-@keyframes spx-ramp{from{opacity:0}to{opacity:1}}
+.spx>b.dat{position:absolute;left:-4%;right:-4%;bottom:1.2%;height:.9cqw;border-radius:99px;opacity:.7;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 9cqw,transparent 9cqw 15.33cqw);animation:duong2 var(--dd) linear infinite}
+.spx:not(.chay)>b.dat{animation-play-state:paused}
+.dung .spx>i,.dung .spx>b.dat,.spx.dung>i{animation-play-state:paused}
+.canh-thu:has(.spx)::after{display:none}
+@keyframes duong2{to{background-position-x:-15.33cqw}}
+@keyframes spx-tho{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes spx-ramp{0%,80%{opacity:0}100%{opacity:1}}
 .sp:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
 .sp{display:block;width:100%;background-repeat:no-repeat;background-position:0 0;image-rendering:auto}
 .sp.chay{animation-name:var(--sp);animation-duration:var(--sd);animation-iteration-count:infinite;animation-timing-function:step-end}
@@ -99,9 +102,9 @@ function dongSprite(khoa) {
 async function hinhThu(khoa, chay, heSo = 1) {
   const sp = await dongSprite(khoa);
   if (sp) {
-    const c = THU_ANH[khoa], n = c.cot * c.hang;
+    const c = THU_ANH[khoa], n = KHUNG_BUOC;
     const fk = c.fps * (+heSo > 0 ? +heSo : 1);
-    return `<div class="spx${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--ft:${(1 / fk).toFixed(3)}s;--spa:sp-${khoa};--spb:spn-${khoa}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i></div>`;
+    return `<div class="spx${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};--bg:url('${GOC}${khoa}.webp');--bs:${c.cot * 100}% ${c.hang * 100}%;--sd:${(n / fk).toFixed(3)}s;--dd:${(n / fk / 3).toFixed(3)}s;--ft:${(1 / fk).toFixed(3)}s;--spa:sp-${khoa};--spb:spn-${khoa};--p4:${viTri(4, c.cot, c.hang)};--p5:${viTri(5, c.cot, c.hang)}" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"><i class="a"></i><i class="b"></i><b class="dat"></b></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
