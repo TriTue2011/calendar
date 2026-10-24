@@ -63,6 +63,9 @@ con_giap: ngay        # ngay | thang | nam: con giáp lấy theo ngày, tháng h
 calendar_entity: calendar.su_kien   # tuỳ chọn: hiện sự kiện trên tờ lịch
 hoat_hoa: true        # false: tắt mọi chuyển động
 nut: true             # hàng nút Hôm qua / Hôm nay / Ngày mai và đổi chế độ
+chay_giay: 6          # con vật bước trong bao nhiêu giây
+nghi_giay: 25         # rồi đứng nghỉ bao nhiêu giây trước khi bước lại
+toc_do: 1             # nhân tốc độ bước (0.5 = chậm một nửa, 2 = nhanh gấp đôi)
 rong: 380             # chiều rộng tối đa (px)
 ```
 
@@ -73,7 +76,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 ## Nhẹ cho dashboard
 
 - Con vật là **sprite WebP** (12 khung, 2,1 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
-- Con vật chạy vài giây rồi nghỉ; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
+- Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ chỉ còn nhịp thở rất nhẹ; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Đo trong Chrome không GPU: luồng chính ~2,8% khi con vật chạy, 0,0% khi nghỉ (hai thẻ cùng lúc).
 
 ## Giới hạn đã biết

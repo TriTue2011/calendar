@@ -11,9 +11,10 @@ import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 
 const THU_ANH = {
   // mọi sprite sheet: lưới cot × hang khung, phát theo thứ tự; fps là tốc độ khi «chạy»
-  ngo: { cot: 4, hang: 3, fps: 14 }, ty: { cot: 4, hang: 3, fps: 10 }, suu: { cot: 4, hang: 3, fps: 9 }, dan: { cot: 4, hang: 3, fps: 10 },
-  mao: { cot: 4, hang: 3, fps: 10 }, thin: { cot: 4, hang: 3, fps: 10 }, ran: { cot: 4, hang: 3, fps: 10 }, mui: { cot: 4, hang: 3, fps: 10 },
-  than: { cot: 4, hang: 3, fps: 10 }, ga: { cot: 4, hang: 3, fps: 10 }, cho: { cot: 4, hang: 3, fps: 11 }, heo: { cot: 4, hang: 3, fps: 10 },
+  // fps = số khung mỗi giây; chu kỳ 12 khung = 12/fps giây (đi bộ ~2 giây một vòng, ngựa phi ~1,3 giây). Có thể nhân thêm bằng cấu hình toc_do.
+  ngo: { cot: 4, hang: 3, fps: 9 }, ty: { cot: 4, hang: 3, fps: 6 }, suu: { cot: 4, hang: 3, fps: 5 }, dan: { cot: 4, hang: 3, fps: 6 },
+  mao: { cot: 4, hang: 3, fps: 6 }, thin: { cot: 4, hang: 3, fps: 6 }, ran: { cot: 4, hang: 3, fps: 6 }, mui: { cot: 4, hang: 3, fps: 6 },
+  than: { cot: 4, hang: 3, fps: 6 }, ga: { cot: 4, hang: 3, fps: 6 }, cho: { cot: 4, hang: 3, fps: 6 }, heo: { cot: 4, hang: 3, fps: 6 },
 };
 const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
@@ -68,6 +69,7 @@ function keyframesSprite(ten, cot, hang) {
   return s + "}";
 }
 const SPRITE_CSS = Object.entries(THU_ANH).map(([k, v]) => keyframesSprite("sp-" + k, v.cot, v.hang)).join("\n") + `
+.sp:not(.chay){animation:sp-tho 4.4s ease-in-out infinite;transform-origin:50% 100%}
 .sp{display:block;width:100%;background-repeat:no-repeat;background-position:0 0;image-rendering:auto}
 .sp.chay{animation-name:var(--sp);animation-duration:var(--sd);animation-iteration-count:infinite;animation-timing-function:step-end}
 .thu-hop{position:relative;width:100%}
@@ -86,11 +88,11 @@ function dongSprite(khoa) {
   }
   return spriteCache.get(khoa);
 }
-async function hinhThu(khoa, chay) {
+async function hinhThu(khoa, chay, heSo = 1) {
   const sp = await dongSprite(khoa);
   if (sp) {
     const c = THU_ANH[khoa], n = c.cot * c.hang;
-    return `<div class="sp${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};background-image:url('${GOC}${khoa}.webp');background-size:${c.cot * 100}% ${c.hang * 100}%;--sp:sp-${khoa};--sd:${(n / c.fps).toFixed(3)}s" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"></div>`;
+    return `<div class="sp${chay ? " chay" : ""}" style="aspect-ratio:${sp.rong}/${sp.cao};background-image:url('${GOC}${khoa}.webp');background-size:${c.cot * 100}% ${c.hang * 100}%;--sp:sp-${khoa};--sd:${(n / (c.fps * (+heSo > 0 ? +heSo : 1))).toFixed(3)}s" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"></div>`;
   }
   return `<div class="thu ${chay ? "di" : "nghi"}">${veConGiap(khoa, "u" + ++_uid)}</div>`;
 }
@@ -109,22 +111,22 @@ button{font:inherit;color:inherit}
 /* ================= BLOC ================= */
 .chong{position:relative;perspective:1500px;perspective-origin:50% 8%;padding-top:4.2cqw}
 .chong::before{content:"";position:absolute;left:3cqw;right:3cqw;bottom:-2.4cqw;height:5cqw;border-radius:50%;background:radial-gradient(ellipse at center,rgba(60,35,10,.38),rgba(60,35,10,0) 70%);z-index:0}
-.to,.to-ao{position:relative;width:100%;aspect-ratio:360/560;border-radius:1.4cqw 1.4cqw 2.2cqw 2.2cqw;overflow:hidden}
+.to{position:relative;width:100%;min-height:155.6cqw;border-radius:1.4cqw 1.4cqw 2.2cqw 2.2cqw;overflow:hidden}
 .nen-to{position:relative;z-index:1;border-radius:1.4cqw 1.4cqw 2.2cqw 2.2cqw;box-shadow:0 .6cqw 0 #e6d6ae,0 1.2cqw 0 #dccb9d,0 1.8cqw 0 #d1bf8f,0 2.4cqw 3cqw rgba(50,28,8,.35)}
-.lop{position:absolute;inset:0}
-.lop.duoi{z-index:1}.lop.tren{z-index:3;transform-origin:50% 0;will-change:transform}
-.lop .to{position:absolute;inset:0;height:100%;aspect-ratio:auto}
+.lop.duoi{position:absolute;inset:0;overflow:hidden;z-index:1;border-radius:1.4cqw 1.4cqw 2.2cqw 2.2cqw}
+.lop.tren{position:relative;z-index:3;transform-origin:50% 0;will-change:transform}
+.lop.duoi .to{position:absolute;inset:0;min-height:0}
 .ghim{position:absolute;z-index:6;top:0;left:0;right:0;height:5.6cqw;border-radius:1.4cqw 1.4cqw 0 0;background:linear-gradient(180deg,#8f2318,#6e1810 70%,#561009);box-shadow:0 .5cqw 1cqw rgba(0,0,0,.35)}
 .ghim::before,.ghim::after{content:"";position:absolute;top:1cqw;width:3.2cqw;height:3.2cqw;border-radius:50%;background:radial-gradient(circle at 40% 35%,#2b1208,#000 70%);box-shadow:inset 0 .3cqw .6cqw rgba(0,0,0,.8),0 .2cqw 0 rgba(255,255,255,.18)}
 .ghim::before{left:9cqw}.ghim::after{right:9cqw}
 .ghim i{position:absolute;left:50%;top:1.6cqw;width:14cqw;height:2cqw;margin-left:-7cqw;border-radius:1cqw;background:linear-gradient(180deg,#e9e4da,#9c968a);box-shadow:0 .3cqw .5cqw rgba(0,0,0,.4)}
 .xepto{position:absolute;inset:0;z-index:2;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(40,20,5,.0),rgba(40,20,5,.0));opacity:0}
-.noidung{position:absolute;inset:0;padding:5.8cqw 4.6cqw 4cqw;display:flex;flex-direction:column;justify-content:space-between;gap:.8cqw}
+.noidung{position:relative;min-height:155.6cqw;padding:5.8cqw 4.6cqw 4cqw;display:flex;flex-direction:column;justify-content:space-between;gap:.8cqw}
 .vien-trong{position:absolute;inset:2.6cqw;border:.5cqw double rgba(138,42,28,.55);border-radius:1cqw;pointer-events:none}
-.dau-to{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;letter-spacing:.14em;color:var(--vien);font-size:4.3cqw;text-transform:uppercase;padding:0 1cqw;border-bottom:.35cqw dotted rgba(138,42,28,.5);padding-bottom:1.1cqw}
+.dau-to{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;letter-spacing:.07em;color:var(--vien);font-size:4.1cqw;text-transform:uppercase;padding:0 1cqw;border-bottom:.35cqw dotted rgba(138,42,28,.5);padding-bottom:1.1cqw}
 .dau-to b{font-size:5.4cqw;letter-spacing:.06em}
 .thu-ngay{text-align:center;font-weight:800;letter-spacing:.34em;color:var(--muc);font-size:5.6cqw;margin-top:.6cqw;text-transform:uppercase}
-.so{text-align:center;font-family:"Playfair Display","Noto Serif Display","Bodoni MT",Georgia,serif;font-weight:900;font-size:29cqw;line-height:30cqw;height:30cqw;font-variant-numeric:lining-nums;color:#241710;text-shadow:0 .5cqw 0 rgba(255,255,255,.55),0 -.2cqw 0 rgba(0,0,0,.18);letter-spacing:-.02em;margin:-.4cqw 0 0}
+.so{text-align:center;font-family:"Playfair Display","Noto Serif Display","Bodoni MT",Georgia,serif;font-weight:900;font-size:27cqw;line-height:29cqw;height:29cqw;margin-bottom:1.6cqw;font-variant-numeric:lining-nums;color:#241710;text-shadow:0 .5cqw 0 rgba(255,255,255,.55),0 -.2cqw 0 rgba(0,0,0,.18);letter-spacing:-.02em;margin:-.4cqw 0 0}
 .so.do{color:var(--do)}.so.t7{color:#1d4a63}
 .am{text-align:center;font-size:4.7cqw;font-weight:700;color:var(--vien);line-height:1.25}
 .am small{display:block;font-size:3.5cqw;font-weight:500;color:var(--muc);opacity:.85;letter-spacing:.02em}
@@ -132,20 +134,21 @@ button{font:inherit;color:inherit}
 .cot-thu{display:flex;flex-direction:column;align-self:end;min-width:0}
 .cot-thu .canh-thu{align-self:stretch}
 .phan-tren{position:relative;flex:1 1 auto;margin:-5.8cqw -4.6cqw 0;padding:7cqw 4.6cqw 1.6cqw;display:flex;flex-direction:column;justify-content:space-between;gap:.8cqw;background-color:rgba(246,237,214,.0);background-size:cover;background-position:center;border-radius:1.4cqw 1.4cqw 0 0}
-.phan-tren::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(247,238,215,.30) 0,rgba(247,238,215,.10) 42%,rgba(247,238,215,.28) 100%)}
+.phan-tren::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,rgba(247,238,215,.26) 0,rgba(247,238,215,.06) 40%,rgba(247,238,215,.50) 100%)}
 .phan-tren .dau-to,.phan-tren .thu-ngay,.phan-tren .am,.phan-tren .am small,.phan-tren .le{text-shadow:0 0 .7cqw rgba(252,246,232,1),0 0 1.6cqw rgba(252,246,232,.95),0 0 3cqw rgba(252,246,232,.8)}
 .phan-tren .so{text-shadow:0 0 1.2cqw rgba(252,246,232,1),0 0 3cqw rgba(252,246,232,.9),0 .5cqw 0 rgba(255,255,255,.5)}
 .phan-tren>*{position:relative}
 .khung-thu{position:relative;flex:0 0 auto;min-height:0;display:grid;grid-template-columns:44% 1fr;gap:2cqw;align-items:end;border-top:.35cqw dotted rgba(138,42,28,.45);border-bottom:.35cqw dotted rgba(138,42,28,.45);padding:1cqw 0}
 .canh-thu{position:relative;align-self:end;overflow:visible;padding-bottom:1.2cqw}
-.canh-thu::after{content:"";position:absolute;left:-4%;right:-4%;bottom:.4cqw;height:.9cqw;border-radius:99px;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 5cqw,transparent 5cqw 8cqw);animation:duong 1.1s linear infinite;animation-play-state:paused;opacity:.7}
+.canh-thu::after{content:"";position:absolute;left:-4%;right:-4%;bottom:.4cqw;height:.9cqw;border-radius:99px;background:repeating-linear-gradient(90deg,rgba(90,60,20,.45) 0 5cqw,transparent 5cqw 8cqw);animation:duong 2.4s linear infinite;animation-play-state:paused;opacity:.7}
 .chay-on.dang-chay .canh-thu::after{animation-play-state:running}
 @keyframes duong{to{background-position-x:-8cqw}}
-.hh{display:flex;gap:.8cqw;justify-content:center;margin-top:.6cqw;font-size:2.5cqw;font-weight:700;color:var(--vien);white-space:nowrap}
-.hh span{background:rgba(255,248,230,.85);border:.25cqw solid rgba(200,150,46,.7);border-radius:99px;padding:.15cqw 1.4cqw}
+@keyframes sp-tho{0%,100%{transform:scale(1,1)}50%{transform:scale(1.006,1.016)}}
+.hh{display:flex;flex-wrap:wrap;gap:.8cqw;justify-content:center;margin-top:.6cqw;font-size:2.5cqw;font-weight:700;color:var(--vien);white-space:nowrap}
+.hh span{white-space:nowrap;background:rgba(255,248,230,.85);border:.25cqw solid rgba(200,150,46,.7);border-radius:99px;padding:.15cqw 1.4cqw}
 .dau-thang .hh{justify-content:flex-end;flex-wrap:wrap;color:#fff1cf}.dau-thang .hh span{background:rgba(0,0,0,.22);border-color:rgba(255,230,160,.6)}
 .thongtin{font-size:3.4cqw;line-height:1.35;display:flex;flex-direction:column;gap:.9cqw;align-self:center}
-.thongtin>div:not(.gio){display:grid;grid-template-columns:17cqw 1fr;gap:1cqw}
+.thongtin>div:not(.gio){display:grid;grid-template-columns:minmax(17cqw,max-content) minmax(0,1fr);gap:1.4cqw}
 .thongtin b{color:var(--vien);white-space:nowrap;font-weight:700}
 .gio{display:grid;grid-template-columns:repeat(6,1fr);gap:.8cqw;margin-top:.4cqw}
 .gio span{font-size:2.9cqw;text-align:center;padding:.5cqw 0;border-radius:.8cqw;background:rgba(138,42,28,.07);color:rgba(45,27,16,.45)}
@@ -164,8 +167,8 @@ button{font:inherit;color:inherit}
  background:linear-gradient(225deg,rgba(0,0,0,0) 48%,rgba(90,60,20,.28) 50%,#fff7e0 52%,#e3d2a6 100%);border-radius:0 0 0 2cqw;transition:width .25s,height .25s;opacity:.0}
 .ban:hover .canh-xe{opacity:1}
 /* thanh nút */
-.thanhnut{display:flex;justify-content:center;gap:2cqw;margin-top:4cqw}
-.nut{border:.35cqw solid rgba(138,42,28,.55);background:#fff8e6;color:var(--vien);border-radius:99px;padding:1.3cqw 3.6cqw;font-size:3.5cqw;font-weight:700;cursor:pointer;transition:transform .12s,background .2s}
+.thanhnut{display:flex;flex-wrap:wrap;justify-content:center;gap:1.6cqw;margin-top:4cqw}
+.nut{border:.35cqw solid rgba(138,42,28,.55);background:#fff8e6;color:var(--vien);border-radius:99px;padding:1.2cqw 3cqw;font-size:3.3cqw;white-space:nowrap;font-weight:700;cursor:pointer;transition:transform .12s,background .2s}
 .nut:hover{background:#ffeec2}.nut:active{transform:scale(.95)}
 .nut.nho{padding:1.3cqw 2.6cqw}
 /* ================= ĐỂ BÀN ================= */
@@ -281,11 +284,13 @@ class LichBlocXuaCard extends HTMLElement {
   _lichThu() {
     clearTimeout(this._thuTimer);
     if (this._cfg.hoat_hoa === false) return;
+    const chayMs = (+this._cfg.chay_giay > 0 ? +this._cfg.chay_giay : 6) * 1000;    // chạy bao lâu
+    const nghiMs = (+this._cfg.nghi_giay > 0 ? +this._cfg.nghi_giay : 25) * 1000;   // nghỉ bao lâu rồi chạy lại
     const doi = (chay) => {
       this._chayThu = chay; this._banEl?.classList.toggle("dang-chay", chay);
       this.shadowRoot.querySelectorAll(".sp").forEach((e) => e.classList.toggle("chay", chay));
       this.shadowRoot.querySelectorAll(".thu").forEach((e) => { e.classList.toggle("di", chay); e.classList.toggle("nghi", !chay); });
-      this._thuTimer = setTimeout(() => doi(!chay), chay ? 4200 + Math.random() * 2500 : 3500 + Math.random() * 3500);
+      this._thuTimer = setTimeout(() => doi(!chay), (chay ? chayMs : nghiMs) * (0.9 + Math.random() * 0.2));
     };
     doi(true);
   }
@@ -330,7 +335,7 @@ class LichBlocXuaCard extends HTMLElement {
   async _traTo(d) {
     const tt = thongTinNgay(d), khoa = chiThu(tt, this._cfg.con_giap), now = new Date();
     const hd = gioHienTai(tt.gio, now), laHomNay = cungNgay(d, now);
-    const hinh = await hinhThu(khoa, this._chayThu !== false);
+    const hinh = await hinhThu(khoa, this._chayThu !== false, this._cfg.toc_do);
     const gioHtml = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"].map((chi) => {
       const g = tt.gio.find((x) => x.chi === chi); return `<span class="${g ? "hd" : ""}${g && laHomNay && hd && hd.chi === chi ? " nay" : ""}" title="${g ? `${g.tu}–${g.den}h` : ""}">${chi}</span>`;
     }).join("");
@@ -364,7 +369,7 @@ class LichBlocXuaCard extends HTMLElement {
     if (gen !== this._gen) return;
     this._goc.innerHTML = `
       <div class="chong"><div class="ghim"><i></i></div>
-        <div class="nen-to"><div class="to-ao" style="visibility:hidden"></div>
+        <div class="nen-to">
           <div class="lop duoi">${duoi}<div class="bong-to"></div></div>
           <div class="lop tren">${tren}<div class="bong-to"></div></div>
         </div><div class="canh-xe"></div></div>
@@ -442,7 +447,7 @@ class LichBlocXuaCard extends HTMLElement {
   }
   async _doiThuTheoNgay(d) {
     const dt = this._goc.querySelector(".dau-thang"), kh = dt && dt.querySelector(".canh-thu"); if (!kh) return;
-    const tt = thongTinNgay(d), html = await hinhThu(chiThu(tt, this._cfg.con_giap), this._chayThu !== false);
+    const tt = thongTinNgay(d), html = await hinhThu(chiThu(tt, this._cfg.con_giap), this._chayThu !== false, this._cfg.toc_do);
     const khoi = kh.querySelector(".khoi-thu"), hh = kh.querySelector(".hh");
     if (khoi) { khoi.innerHTML = html; khoi.classList.remove("hien"); void khoi.offsetWidth; khoi.classList.add("hien"); }
     if (hh) hh.innerHTML = huyHieu(tt);
@@ -461,7 +466,7 @@ class LichBlocXuaCard extends HTMLElement {
     const dau = new Date(y, m, 1), so = new Date(y, m + 1, 0).getDate(), lech = (dau.getDay() + 6) % 7;
     const ngayHienThu = (this._chonNgay.getMonth() === m && this._chonNgay.getFullYear() === y) ? this._chonNgay : (new Date().getMonth() === m && new Date().getFullYear() === y ? new Date() : new Date(y, m, 1));
     const ttThu = thongTinNgay(ngayHienThu);
-    const hinh = await hinhThu(chiThu(ttThu, this._cfg.con_giap), this._chayThu !== false);
+    const hinh = await hinhThu(chiThu(ttThu, this._cfg.con_giap), this._chayThu !== false, this._cfg.toc_do);
     const a1 = getLunarDate(1, m + 1, y), a2 = getLunarDate(so, m + 1, y), now = new Date();
     let cells = ""; const hdr = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((t, i) => `<div class="th${i === 6 ? " cn" : ""}">${t}</div>`).join("");
     for (let i = 0; i < lech; i++) { const d = congNgay(dau, i - lech); cells += this._o(d, true, now); }
