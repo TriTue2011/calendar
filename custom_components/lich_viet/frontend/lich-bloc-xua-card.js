@@ -20,10 +20,22 @@ const THU_ANH = {
 };
 const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
-// Con giáp vẽ bằng xương (WebGL) thay vì sprite: khoá -> tệp cấu hình + hai lớp ảnh.
-// Chỉ con chó ở NV269; 11 con còn lại giữ nguyên đường sprite. Ảnh lớp phải tồn
-// tại thì khoá mới được dùng (test cấu trúc bắt điều này).
-const THU_XUONG = { cho: { chinh: "xuong/cho-chinh.webp", xa: "xuong/cho-xa.webp", cfg: "xuong/cho.json" } };
+// Con giáp vẽ bằng xương (WebGL) thay vì sprite: khoá -> tệp cấu hình + ảnh lớp.
+// Mở rộng cho mọi khoá có cấu hình + ảnh trong thư mục xuong/. Con nào thiếu -> sprite như cũ.
+const THU_XUONG = {
+  cho: { chinh: "xuong/cho-chinh.webp", xa: "xuong/cho-xa.webp", cfg: "xuong/cho.json" },
+  suu: { chinh: "xuong/suu-chinh.webp", xa: "xuong/suu-xa.webp", cfg: "xuong/suu.json" },
+  dan: { chinh: "xuong/dan-chinh.webp", xa: "xuong/dan-xa.webp", cfg: "xuong/dan.json" },
+  mao: { chinh: "xuong/mao-chinh.webp", xa: "xuong/mao-xa.webp", cfg: "xuong/mao.json" },
+  thin: { chinh: "xuong/thin-chinh.webp", cfg: "xuong/thin.json" },
+  ran: { chinh: "xuong/ran-chinh.webp", cfg: "xuong/ran.json" },
+  ngo: { chinh: "xuong/ngo-chinh.webp", xa: "xuong/ngo-xa.webp", cfg: "xuong/ngo.json" },
+  mui: { chinh: "xuong/mui-chinh.webp", xa: "xuong/mui-xa.webp", cfg: "xuong/mui.json" },
+  than: { chinh: "xuong/than-chinh.webp", xa: "xuong/than-xa.webp", cfg: "xuong/than.json" },
+  ga: { chinh: "xuong/ga-chinh.webp", xa: "xuong/ga-xa.webp", cfg: "xuong/ga.json" },
+  ty: { chinh: "xuong/ty-chinh.webp", xa: "xuong/ty-xa.webp", cfg: "xuong/ty.json" },
+  heo: { chinh: "xuong/heo-chinh.webp", xa: "xuong/heo-xa.webp", cfg: "xuong/heo.json" },
+};
 // Thử tạo ngữ cảnh WebGL một lần, nhớ kết quả; huỷ ngay ngữ cảnh thử để khỏi
 // tốn suất (~16 ngữ cảnh/trình duyệt).
 let _coWebGL = null;
@@ -37,21 +49,38 @@ function coWebGL() {
   } catch (e) { _coWebGL = false; }
   return _coWebGL;
 }
-let _cfgXuongP = null, _anhXuongP = null;
-function taiCauHinhXuong() {
-  if (!_cfgXuongP) _cfgXuongP = fetch(new URL("./" + THU_XUONG.cho.cfg, import.meta.url)).then((r) => { if (!r.ok) throw new Error("không tải được cấu hình xương"); return r.json(); });
-  return _cfgXuongP;
+const _cfgXuongCache = new Map();
+function taiCauHinhXuong(khoa = "cho") {
+  const item = THU_XUONG[khoa];
+  if (!item) return Promise.reject(new Error("không có cấu hình xương cho " + khoa));
+  if (!_cfgXuongCache.has(khoa)) {
+    _cfgXuongCache.set(khoa, fetch(new URL("./" + item.cfg, import.meta.url)).then((r) => {
+      if (!r.ok) throw new Error("không tải được cấu hình xương " + khoa);
+      return r.json();
+    }));
+  }
+  return _cfgXuongCache.get(khoa);
 }
-function taiAnhXuong(ten) {
+const _anhXuongCache = new Map();
+function taiAnhXuong(khoa, ten) {
   return new Promise((res, rej) => {
+    const path = THU_XUONG[khoa]?.[ten];
+    if (!path) return res(null);
     const im = new Image();
-    im.onload = () => res(im); im.onerror = () => rej(new Error("không tải được ảnh xương " + ten));
-    im.src = new URL("./" + THU_XUONG.cho[ten], import.meta.url).href;
+    im.onload = () => res(im); im.onerror = () => rej(new Error(`không tải được ảnh xương ${khoa} ${ten}`));
+    im.src = new URL("./" + path, import.meta.url).href;
   });
 }
-function taiAnhXuongCa() {
-  if (!_anhXuongP) _anhXuongP = Promise.all([taiAnhXuong("chinh"), taiAnhXuong("xa")]).then(([chinh, xa]) => ({ chinh, xa }));
-  return _anhXuongP;
+function taiAnhXuongCa(khoa = "cho") {
+  if (!_anhXuongCache.has(khoa)) {
+    const item = THU_XUONG[khoa];
+    if (!item) return Promise.reject(new Error("không có ảnh xương cho " + khoa));
+    const p = item.xa
+      ? Promise.all([taiAnhXuong(khoa, "chinh"), taiAnhXuong(khoa, "xa")]).then(([chinh, xa]) => ({ chinh, xa }))
+      : taiAnhXuong(khoa, "chinh").then((chinh) => ({ chinh }));
+    _anhXuongCache.set(khoa, p);
+  }
+  return _anhXuongCache.get(khoa);
 }
 // ảnh nền phong cảnh: mỗi con giáp 12 ảnh, ảnh n = tháng dương lịch n; chỉ phủ phần trên đường gạch
 const urlNenAnh = (khoa, thang) => `${GOC_NEN}${khoa}-${thang}.webp`;
@@ -139,7 +168,7 @@ async function hinhThu(khoa, chay, heSo = 1) {
   // tải cấu hình/ảnh lỗi thì rơi về sprite như cũ (không vỡ thẻ).
   if (THU_XUONG[khoa] && coWebGL()) {
     try {
-      const cfg = await taiCauHinhXuong();
+      const cfg = await taiCauHinhXuong(khoa);
       const W = cfg.anh.rong + 2 * cfg.le_khung[0], H = cfg.anh.cao + 2 * cfg.le_khung[1];
       return `<canvas class="xuong${chay ? " chay" : ""}" data-xuong="${khoa}" width="${W}" height="${H}" style="aspect-ratio:${W}/${H};width:100%;display:block" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"></canvas>`;
     } catch (e) { /* rơi về sprite bên dưới */ }
@@ -392,17 +421,18 @@ class LichBlocXuaCard extends HTMLElement {
   async _khoiDongXuong() {
     const canvases = [...this.shadowRoot.querySelectorAll("canvas[data-xuong]:not([data-xuong-da-chay])")];
     if (!canvases.length) return;
-    let cfg, anh;
-    try { cfg = await taiCauHinhXuong(); anh = await taiAnhXuongCa(); }
-    catch (e) {
-      canvases.forEach((cv) => cv.replaceWith(Object.assign(document.createElement("div"), { className: "thu nghi", innerHTML: veConGiap(cv.dataset.xuong, "u" + ++_uid) })));
-      return;
-    }
     this._xuongs = this._xuongs || [];
     for (const cv of canvases) {
       if (!cv.isConnected) continue;
-      try { this._xuongs.push(taoXuong(cv, cfg, anh)); cv.dataset.xuongDaChay = "1"; }
-      catch (e) { cv.replaceWith(Object.assign(document.createElement("div"), { className: "thu nghi", innerHTML: veConGiap(cv.dataset.xuong, "u" + ++_uid) })); }
+      const khoa = cv.dataset.xuong;
+      try {
+        const cfg = await taiCauHinhXuong(khoa);
+        const anh = await taiAnhXuongCa(khoa);
+        this._xuongs.push(taoXuong(cv, cfg, anh));
+        cv.dataset.xuongDaChay = "1";
+      } catch (e) {
+        cv.replaceWith(Object.assign(document.createElement("div"), { className: "thu nghi", innerHTML: veConGiap(khoa, "u" + ++_uid) }));
+      }
     }
     if (this._xuongs.length) this._chayVongXuong();
   }

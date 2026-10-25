@@ -50,6 +50,15 @@ export function viTriBanChan(chan, t, cauHinh = {}) {
 // { truoc: |x(chân trước gần) - x(chân trước xa)|, sau: ... }.
 // Cặp trước = chân có hip.x lớn hơn trong mỗi lớp; cặp sau = chân còn lại.
 export function khoangCachChan(cauHinh, t) {
+  if (cauHinh.kieu === "song" || !cauHinh.xa) {
+    return { truoc: 0, sau: 0, chan: 0 };
+  }
+  const cChinh = cauHinh.chinh?.chan || [];
+  const cXa = cauHinh.xa?.chan || [];
+  if (cChinh.length === 1 && cXa.length === 1) {
+    const d = Math.abs(viTriBanChan(cChinh[0], t, cauHinh)[0] - viTriBanChan(cXa[0], t, cauHinh)[0]);
+    return { chan: d, truoc: d, sau: d };
+  }
   const lay = (lop) => {
     const chan = cauHinh[lop].chan;
     const truoc = chan[0].hip[0] < chan[1].hip[0] ? chan[1] : chan[0];
@@ -77,6 +86,20 @@ function dseg(p, a, b) {
 const VS = `attribute vec2 p;attribute vec2 uv;attribute vec4 w;uniform mat3 M[5];uniform vec2 sz;uniform vec2 off;varying vec2 v;
 void main(){vec3 q=vec3(p,1.0);float wb=1.0-w.x-w.y-w.z-w.w;vec3 r=wb*(M[0]*q)+w.x*(M[1]*q)+w.y*(M[2]*q)+w.z*(M[3]*q)+w.w*(M[4]*q);r.xy+=off;
 gl_Position=vec4(r.x/sz.x*2.0-1.0,1.0-r.y/sz.y*2.0,0.0,1.0);v=uv;}`;
+const VS_SONG = `attribute vec2 p;attribute vec2 uv;uniform vec2 sz;uniform vec2 off;uniform float uA;uniform float uk;uniform float uOmega;uniform float uDauX;uniform float uDauY;uniform float uT;varying vec2 v;
+void main(){
+  float dx = max(0.0, uDauX - p.x);
+  float normD = dx / max(1.0, uDauX);
+  float amp = uA * pow(normD, 1.2);
+  float wave = amp * sin(uk * (p.x - uDauX) - uOmega * uT);
+  float rot = 0.035 * sin(-uOmega * uT);
+  float cR = cos(rot); float sR = sin(rot);
+  vec2 rel = vec2(p.x - uDauX, (p.y + wave) - uDauY);
+  vec2 rotRel = vec2(cR * rel.x - sR * rel.y, sR * rel.x + cR * rel.y);
+  vec2 finalPos = vec2(uDauX + rotRel.x, uDauY + rotRel.y) + off;
+  gl_Position = vec4(finalPos.x / sz.x * 2.0 - 1.0, 1.0 - finalPos.y / sz.y * 2.0, 0.0, 1.0);
+  v = uv;
+}`;
 const FS = `precision mediump float;uniform sampler2D t;varying vec2 v;void main(){gl_FragColor=texture2D(t,v);}`;
 const I3 = () => [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const mul = (A, B) => {
@@ -103,6 +126,93 @@ export function taoXuong(canvasMe, cauHinh, anh) {
     || canvasMe.getContext("experimental-webgl", { premultipliedAlpha: true, alpha: true, antialias: true, preserveDrawingBuffer: true });
   if (!gl) throw new Error("không có WebGL");
 
+  function sh(type, src) {
+    const o = gl.createShader(type);
+    gl.shaderSource(o, src); gl.compileShader(o);
+    if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o));
+    return o;
+  }
+  const mk = (d, t) => {
+    const b = gl.createBuffer();
+    gl.bindBuffer(t, b); gl.bufferData(t, d, gl.STATIC_DRAW);
+    return b;
+  };
+  function loadTex(im) {
+    const tx = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tx);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+    for (const [a, b] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+      [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, b);
+    return tx;
+  }
+
+  const CELL = 8, NX = W / CELL, NY = Math.ceil(H / CELL);
+
+  // Chế độ sóng (rắn, rồng): không xương, dịch đỉnh theo sóng sin
+  if (cauHinh.kieu === "song") {
+    const prSong = gl.createProgram();
+    gl.attachShader(prSong, sh(gl.VERTEX_SHADER, VS_SONG));
+    gl.attachShader(prSong, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prSong); gl.useProgram(prSong);
+
+    const P = [], UV = [], idx = [];
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+      const x = i * CELL, y = Math.min(H, j * CELL);
+      P.push(x, y); UV.push(x / W, y / H);
+    }
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+      const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1;
+      idx.push(a, b, c, b, d, c);
+    }
+    const bp = mk(new Float32Array(P), gl.ARRAY_BUFFER);
+    const bu = mk(new Float32Array(UV), gl.ARRAY_BUFFER);
+    const bi = mk(new Uint16Array(idx), gl.ELEMENT_ARRAY_BUFFER);
+    const tx = loadTex(anh.chinh || anh);
+    const n = idx.length;
+
+    const locS = {
+      p: gl.getAttribLocation(prSong, "p"), uv: gl.getAttribLocation(prSong, "uv"),
+      off: gl.getUniformLocation(prSong, "off"), sz: gl.getUniformLocation(prSong, "sz"),
+      uA: gl.getUniformLocation(prSong, "uA"), uk: gl.getUniformLocation(prSong, "uk"),
+      uOmega: gl.getUniformLocation(prSong, "uOmega"), uDauX: gl.getUniformLocation(prSong, "uDauX"),
+      uDauY: gl.getUniformLocation(prSong, "uDauY"), uT: gl.getUniformLocation(prSong, "uT"),
+    };
+
+    const state = { huy: false, dung: false };
+    return {
+      ve(t) {
+        if (state.huy) return;
+        state.dung = false;
+        t = ((t % 1) + 1) % 1;
+        gl.viewport(0, 0, CW, CH);
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bp); gl.enableVertexAttribArray(locS.p); gl.vertexAttribPointer(locS.p, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bu); gl.enableVertexAttribArray(locS.uv); gl.vertexAttribPointer(locS.uv, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bi);
+        gl.bindTexture(gl.TEXTURE_2D, tx);
+        gl.uniform2f(locS.off, PX, PY + NHUN * Math.sin(2 * Math.PI * (t * 2 + 0.25)));
+        gl.uniform2f(locS.sz, CW, CH);
+        gl.uniform1f(locS.uA, cauHinh.A ?? 26.0);
+        gl.uniform1f(locS.uk, cauHinh.k ?? 0.00683);
+        gl.uniform1f(locS.uOmega, cauHinh.omega ?? (2 * Math.PI));
+        gl.uniform1f(locS.uDauX, cauHinh.dau_x ?? (W * 0.88));
+        gl.uniform1f(locS.uDauY, cauHinh.dau_y ?? (H / 2));
+        gl.uniform1f(locS.uT, t);
+        gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_SHORT, 0);
+      },
+      dung() { state.dung = true; },
+      huy() {
+        if (state.huy) return;
+        state.huy = true;
+        const ext = gl.getExtension("WEBGL_lose_context");
+        if (ext) ext.loseContext();
+      },
+    };
+  }
+
+  // Chế độ xương hai lớp (bốn chân hoặc hai chân)
   // Đưa khớp và bán kính về hệ ảnh (nhân K), giữ nguyên c/a/ph.
   const lop = {};
   for (const key of ["xa", "chinh"]) {
@@ -116,17 +226,10 @@ export function taoXuong(canvasMe, cauHinh, anh) {
     };
   }
 
-  function sh(type, src) {
-    const o = gl.createShader(type);
-    gl.shaderSource(o, src); gl.compileShader(o);
-    if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o));
-    return o;
-  }
   const pr = gl.createProgram();
   gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS));
   gl.linkProgram(pr); gl.useProgram(pr);
 
-  const CELL = 8, NX = W / CELL, NY = Math.ceil(H / CELL);
   function build(layer) {
     const P = [], UV = [], Wt = [];
     for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
@@ -147,25 +250,11 @@ export function taoXuong(canvasMe, cauHinh, anh) {
       const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1;
       idx.push(a, b, c, b, d, c);
     }
-    const mk = (d, t) => {
-      const b = gl.createBuffer();
-      gl.bindBuffer(t, b); gl.bufferData(t, d, gl.STATIC_DRAW);
-      return b;
-    };
     layer.bp = mk(new Float32Array(P), gl.ARRAY_BUFFER);
     layer.bu = mk(new Float32Array(UV), gl.ARRAY_BUFFER);
     layer.bw = mk(new Float32Array(Wt), gl.ARRAY_BUFFER);
     layer.bi = mk(new Uint16Array(idx), gl.ELEMENT_ARRAY_BUFFER);
     layer.n = idx.length;
-  }
-  function loadTex(im) {
-    const tx = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tx);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
-    for (const [a, b] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
-      [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, a, b);
-    return tx;
   }
   for (const key of ["xa", "chinh"]) {
     build(lop[key]);

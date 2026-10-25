@@ -1,0 +1,68 @@
+{
+ "K": 0.8928571428571429,
+ "anh": {
+  "rong": 800,
+  "cao": 721
+ },
+ "chinh": {
+  "tep": "ty-chinh.webp",
+  "chan": [
+   {
+    "ten": "chan",
+    "hip": [
+     633,
+     616
+    ],
+    "knee": [
+     706,
+     716
+    ],
+    "paw": [
+     808,
+     798
+    ],
+    "c": 0.766,
+    "a": 0.251,
+    "ph": 0.0,
+    "rong": 81,
+    "r": 129
+   }
+  ]
+ },
+ "chu_ky_giay": 1.2,
+ "ghi_chu": "Cấu hình xương con ty (2 chân). Toạ độ khớp ở hệ ảnh gốc rộng 896 px; K = 800/896 đưa về ảnh lớp rộng 800 px.",
+ "he_toa_do": 896,
+ "le_khung": [
+  60,
+  30
+ ],
+ "nhun_than_px": 3,
+ "xa": {
+  "tep": "ty-xa.webp",
+  "r": 226,
+  "chan": [
+   {
+    "ten": "chan",
+    "hip": [
+     511,
+     615
+    ],
+    "knee": [
+     398,
+     717
+    ],
+    "paw": [
+     408,
+     800
+    ],
+    "c": -0.508,
+    "a": 0.279,
+    "ph": 0.5,
+    "rong": 88,
+    "r": 226
+   }
+  ]
+ },
+ "duty": 0.65,
+ "goi": 0.5
+}

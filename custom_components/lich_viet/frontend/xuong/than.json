@@ -1,0 +1,68 @@
+{
+ "K": 0.9205983889528193,
+ "anh": {
+  "rong": 800,
+  "cao": 880
+ },
+ "chinh": {
+  "tep": "than-chinh.webp",
+  "chan": [
+   {
+    "ten": "chan",
+    "hip": [
+     571,
+     643
+    ],
+    "knee": [
+     644,
+     811
+    ],
+    "paw": [
+     735,
+     948
+    ],
+    "c": 0.493,
+    "a": 0.102,
+    "ph": 0.0,
+    "rong": 210,
+    "r": 102
+   }
+  ]
+ },
+ "chu_ky_giay": 1.2,
+ "ghi_chu": "Cấu hình xương con than (2 chân). Toạ độ khớp ở hệ ảnh gốc rộng 869 px; K = 800/869 đưa về ảnh lớp rộng 800 px.",
+ "he_toa_do": 869,
+ "le_khung": [
+  60,
+  30
+ ],
+ "nhun_than_px": 3,
+ "xa": {
+  "tep": "than-xa.webp",
+  "r": 226,
+  "chan": [
+   {
+    "ten": "chan",
+    "hip": [
+     509,
+     643
+    ],
+    "knee": [
+     321,
+     811
+    ],
+    "paw": [
+     340,
+     948
+    ],
+    "c": -0.506,
+    "a": 0.12,
+    "ph": 0.5,
+    "rong": 148,
+    "r": 226
+   }
+  ]
+ },
+ "duty": 0.65,
+ "goi": 0.5
+}

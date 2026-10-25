@@ -1,0 +1,68 @@
+{
+ "K": 0.7920792079207921,
+ "anh": {
+  "rong": 800,
+  "cao": 716
+ },
+ "chinh": {
+  "tep": "ga-chinh.webp",
+  "chan": [
+   {
+    "ten": "chan",
+    "hip": [
+     680,
+     619
+    ],
+    "knee": [
+     762,
+     770
+    ],
+    "paw": [
+     939,
+     894
+    ],
+    "c": 0.755,
+    "a": 0.144,
+    "ph": 0.0,
+    "rong": 107,
+    "r": 101
+   }
+  ]
+ },
+ "chu_ky_giay": 1.2,
+ "ghi_chu": "Cấu hình xương con ga (2 chân). Toạ độ khớp ở hệ ảnh gốc rộng 1010 px; K = 800/1010 đưa về ảnh lớp rộng 800 px.",
+ "he_toa_do": 1010,
+ "le_khung": [
+  60,
+  30
+ ],
+ "nhun_than_px": 3,
+ "xa": {
+  "tep": "ga-xa.webp",
+  "r": 186,
+  "chan": [
+   {
+    "ten": "chan",
+    "hip": [
+     589,
+     618
+    ],
+    "knee": [
+     382,
+     772
+    ],
+    "paw": [
+     420,
+     897
+    ],
+    "c": -0.545,
+    "a": 0.177,
+    "ph": 0.5,
+    "rong": 92,
+    "r": 186
+   }
+  ]
+ },
+ "duty": 0.65,
+ "goi": 0.5
+}

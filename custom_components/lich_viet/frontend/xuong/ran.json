@@ -1,0 +1,23 @@
+{
+ "kieu": "song",
+ "A": 26.0,
+ "k": 0.00683,
+ "omega": 6.2832,
+ "dau_x": 693.8,
+ "dau_y": 176.3,
+ "K": 0.572655690765927,
+ "he_toa_do": 1397,
+ "anh": {
+  "rong": 800,
+  "cao": 374
+ },
+ "le_khung": [
+  60,
+  30
+ ],
+ "nhun_than_px": 2,
+ "chu_ky_giay": 1.2,
+ "chinh": {
+  "tep": "ran-chinh.webp"
+ }
+}
