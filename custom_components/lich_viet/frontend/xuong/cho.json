@@ -21,8 +21,8 @@
      366,
      908
     ],
-    "c": 0.0,
-    "a": 0.134,
+    "c": 0.125,
+    "a": 0.216,
     "ph": 0.0,
     "rong": 98,
     "r": 105
@@ -41,16 +41,16 @@
      814,
      908
     ],
-    "c": 0.0,
-    "a": 0.197,
-    "ph": 0.0,
+    "c": 0.1,
+    "a": 0.313,
+    "ph": 0.25,
     "rong": 102,
     "r": 78
    }
   ]
  },
  "chu_ky_giay": 1.2,
- "ghi_chu": "Cấu hình xương con chó (khoá cho). Toạ độ khớp ở hệ ảnh gốc rộng 1200 px; K = 800/1200 đưa về ảnh lớp rộng 800 px. Ảnh lớp chuẩn: chó bốn chân rời nhau (chân sau xa lùi, chân trước xa tiến); chân xa sẫm hơn nằm ở lớp sau thân. `rong` = bề ngang cẳng chân thật (hệ 1200) để kiểm khoảng cách bàn chân; `r` = bán kính vùng trọng số của capsule (KHÔNG phải bề ngang chân).",
+ "ghi_chu": "Cấu hình xương con chó (khoá cho). Toạ độ khớp ở hệ ảnh gốc rộng 1200 px; K = 800/1200 đưa về ảnh lớp rộng 800 px. Ảnh lớp chuẩn: chó bốn chân rời nhau (chân sau xa lùi, chân trước xa tiến); chân xa sẫm hơn nằm ở lớp sau thân. `rong` = bề ngang cẳng chân thật (hệ 1200) để kiểm khoảng cách bàn chân; `r` = bán kính vùng trọng số của capsule (KHÔNG phải bề ngang chân). Dáng đi theo số liệu thật: bước SO LE (gần-sau 0, gần-trước 0,25, xa-sau 0,5, xa-trước 0,75), tiếp đất 0,65, gối gập đạt đỉnh sớm (Muybridge, Usherwood & Self Davies 2017).",
  "he_toa_do": 1200,
  "le_khung": [
   60,
@@ -75,8 +75,8 @@
      72,
      890
     ],
-    "c": -0.25,
-    "a": 0.131,
+    "c": -0.425,
+    "a": 0.2,
     "ph": 0.5,
     "rong": 90
    },
@@ -94,11 +94,13 @@
      1103,
      908
     ],
-    "c": 0.45,
-    "a": 0.135,
-    "ph": 0.5,
+    "c": 0.6,
+    "a": 0.288,
+    "ph": 0.75,
     "rong": 94
    }
   ]
- }
+ },
+ "duty": 0.65,
+ "goi": 0.5
 }

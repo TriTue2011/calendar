@@ -14,14 +14,16 @@
 const CHU_KY_DUTY = 0.6;
 const GOC_GOI = 0.62;
 
-export function dangChan(phi) {
+// duty = tỷ lệ chu kỳ chân chạm đất (thú có vú đi bộ ≈ 0,6–0,7; Usherwood & Self Davies 2017), goi = góc gập gối cực đại khi vung chân (rad).
+// Gối gập ĐẠT ĐỈNH SỚM trong pha vung (nhấc chân rồi duỗi ra trước) như chân thật trong ảnh liên tiếp Muybridge, không đối xứng.
+export function dangChan(phi, duty = CHU_KY_DUTY, goi = GOC_GOI) {
   phi = ((phi % 1) + 1) % 1;
-  if (phi < CHU_KY_DUTY) {
-    const s = phi / CHU_KY_DUTY;
+  if (phi < duty) {
+    const s = phi / duty;
     return { sh: 1 - 2 * s, flex: 0, stance: 1 };
   }
-  const s = (phi - CHU_KY_DUTY) / (1 - CHU_KY_DUTY), e = s * s * (3 - 2 * s);
-  return { sh: -1 + 2 * e, flex: GOC_GOI * Math.sin(Math.PI * s), stance: 0 };
+  const s = (phi - duty) / (1 - duty), e = s * s * (3 - 2 * s);
+  return { sh: -1 + 2 * e, flex: goi * Math.sin(Math.PI * Math.pow(s, 0.75)), stance: 0 };
 }
 
 function xoay(a, px, py) {
@@ -32,8 +34,8 @@ function xoay(a, px, py) {
 // Vị trí bàn chân (hệ toạ độ của cấu hình) của một chân ở pha t, tính bằng
 // động học thuận đúng như shader: paw' = hip + R(th) * S * ((knee-hip) +
 // R(flex) * (paw-knee)), với S kéo dài theo y khi stance (hệ số sig).
-export function viTriBanChan(chan, t) {
-  const g = dangChan(t + chan.ph);
+export function viTriBanChan(chan, t, cauHinh = {}) {
+  const g = dangChan(t + chan.ph, cauHinh.duty, cauHinh.goi);
   const rest = Math.atan2(chan.paw[0] - chan.hip[0], chan.paw[1] - chan.hip[1]);
   const abs = chan.c + chan.a * g.sh;
   const th = -(abs - rest);
@@ -56,8 +58,8 @@ export function khoangCachChan(cauHinh, t) {
   };
   const chinh = lay("chinh"), xa = lay("xa");
   return {
-    truoc: Math.abs(viTriBanChan(chinh.truoc, t)[0] - viTriBanChan(xa.truoc, t)[0]),
-    sau: Math.abs(viTriBanChan(chinh.sau, t)[0] - viTriBanChan(xa.sau, t)[0]),
+    truoc: Math.abs(viTriBanChan(chinh.truoc, t, cauHinh)[0] - viTriBanChan(xa.truoc, t, cauHinh)[0]),
+    sau: Math.abs(viTriBanChan(chinh.sau, t, cauHinh)[0] - viTriBanChan(xa.sau, t, cauHinh)[0]),
   };
 }
 
@@ -176,7 +178,7 @@ export function taoXuong(canvasMe, cauHinh, anh) {
   function bones(layer, t) {
     const M = [I3()];
     layer.legs.forEach((L) => {
-      const g = dangChan(t + L.ph);
+      const g = dangChan(t + L.ph, cauHinh.duty, cauHinh.goi);
       const abs = L.c + L.a * g.sh;
       const th = -(abs - L.rest);
       const sig = g.stance ? 1 / Math.max(0.92, Math.cos(th)) : 1;
