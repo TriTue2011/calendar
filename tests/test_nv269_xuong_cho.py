@@ -50,8 +50,8 @@ def kiem_tra_cfg(cfg):
                 loi.append(f"{lop}.{g.get('ten')}: cần hip.y < knee.y < paw.y")
             if not (0 < g["a"] < 0.5):
                 loi.append(f"{lop}.{g.get('ten')}: cần 0 < a < 0,5")
-            if g["ph"] not in (0, 0.5):
-                loi.append(f"{lop}.{g.get('ten')}: pha phải thuộc {{0, 0,5}}")
+            if g["ph"] not in (0, 0.25, 0.5, 0.75):
+                loi.append(f"{lop}.{g.get('ten')}: pha phải thuộc {{0, 0,25, 0,5, 0,75}} (bước so le theo dữ liệu thật)")
             for k in ("hip", "knee", "paw"):
                 x, y = g[k]
                 if not (0 <= x <= 1200 and 0 <= y <= cfg["anh"]["cao"] * 1200 / cfg["anh"]["rong"]):
@@ -97,14 +97,14 @@ def test_the_nap_bo_ve_xuong_va_giu_nguyen_sprite():
 
 # ---------- động học thuận độc lập bằng Python (đối chiếu với module JS) ----------
 
-def _dang(phi):
+def _dang(phi, duty=0.6, goi=0.62):
     phi %= 1.0
-    if phi < 0.6:
-        s = phi / 0.6
+    if phi < duty:
+        s = phi / duty
         return 1 - 2 * s, 0.0, 1
-    s = (phi - 0.6) / 0.4
+    s = (phi - duty) / (1 - duty)
     e = s * s * (3 - 2 * s)
-    return -1 + 2 * e, 0.62 * math.sin(math.pi * s), 0
+    return -1 + 2 * e, goi * math.sin(math.pi * s ** 0.75), 0
 
 
 def _xoay(a, px, py):
@@ -112,8 +112,9 @@ def _xoay(a, px, py):
     return c * px - s * py, s * px + c * py
 
 
-def _ban_chan(chan, t):
-    sh, flex, stance = _dang(t + chan["ph"])
+def _ban_chan(chan, t, cfg=None):
+    cfg = cfg or {}
+    sh, flex, stance = _dang(t + chan["ph"], cfg.get("duty", 0.6), cfg.get("goi", 0.62))
     rest = math.atan2(chan["paw"][0] - chan["hip"][0], chan["paw"][1] - chan["hip"][1])
     th = -(chan["c"] + chan["a"] * sh - rest)
     sig = 1 / max(0.92, math.cos(th)) if stance else 1
@@ -132,8 +133,8 @@ def _kc(cfg, t):
         return truoc, sau
     ct, cs = cap("chinh")
     xt, xs = cap("xa")
-    return (abs(_ban_chan(ct, t)[0] - _ban_chan(xt, t)[0]),
-            abs(_ban_chan(cs, t)[0] - _ban_chan(xs, t)[0]))
+    return (abs(_ban_chan(ct, t, cfg)[0] - _ban_chan(xt, t, cfg)[0]),
+            abs(_ban_chan(cs, t, cfg)[0] - _ban_chan(xs, t, cfg)[0]))
 
 
 def _min_kc(cfg):
@@ -169,26 +170,71 @@ def test_khoang_cach_chan_python_khop_js():
         assert abs(f - pf) < 1e-6 and abs(h - ph) < 1e-6, dong
 
 
-@pytest.mark.xfail(reason="Ảnh lớp TẠM từ khung sprite: chân trước gần/xa lúc nghỉ chỉ cách nhau ~95 px nên khoảng cách tối thiểu trên 240 điểm là 26,1 (trước, ngưỡng 108,8) và 48,3 (sau, ngưỡng 128,0) — chưa đạt ngưỡng spec; chờ ảnh lớp chuẩn của điều phối (xem hoi-nv269-anh-lop-cho.md).")
-def test_khoang_cach_chan_theo_nguong_spec():
-    f, h = _min_kc(CFG)
-    th_f = 0.8 * 1.6 * min(CFG["chinh"]["chan"][1]["r"], CFG["xa"]["r"])
-    th_h = 0.8 * 1.6 * min(CFG["chinh"]["chan"][0]["r"], CFG["xa"]["r"])
-    assert f >= th_f, f"trước: {f:.1f} < {th_f:.1f}"
-    assert h >= th_h, f"sau: {h:.1f} < {th_h:.1f}"
+# ---------- tiêu chí chân của chủ máy (đo trên hình vẽ thật bằng do_chan.py; đây là bản động học của cùng tiêu chí) ----------
+# (a) chân XA phải di chuyển như chân gần (đã từng «chân xa ở mãi một chỗ»); (b) bước ĐỀU giữa bốn chân; (c) bàn chân gần–xa cùng cặp
+# không chồng nhau: khoảng cách ngang tâm bàn chân ≥ (bề ngang chân gần + bề ngang chân xa) / 2, cộng một khe nhìn thấy được.
+# `rong` = bề ngang cẳng chân thật (hệ 1200); `r` là bán kính vùng trọng số capsule, KHÔNG phải bề ngang chân.
+
+KHE_TOI_THIEU_PX = 20
 
 
-def test_dot_bien_bien_do_chan_truoc_bi_phat_hien():
-    """Đổi biên độ cả hai chân trước lên 0,5 phải làm khoảng cách tối thiểu giảm."""
+def _quang(cfg, lop, ten):
+    chan = next(g for g in cfg[lop]["chan"] if g["ten"] == ten)
+    xs = [_ban_chan(chan, i / 240, cfg)[0] for i in range(240)]
+    return max(xs) - min(xs)
+
+
+def _bon_quang(cfg):
+    return {(lop, ten): _quang(cfg, lop, ten) for lop in ("chinh", "xa") for ten in ("sau", "truoc")}
+
+
+def _khe(cfg):
+    """Khe nhỏ nhất (px) giữa bàn chân gần và xa SAU KHI trừ bề ngang trung bình của hai chân, tính cho {trước, sau}."""
+    rong = lambda lop, ten: next(g for g in cfg[lop]["chan"] if g["ten"] == ten)["rong"]
+    truoc = sau = float("inf")
+    for i in range(240):
+        f, h = _kc(cfg, i / 240)
+        truoc = min(truoc, f - (rong("chinh", "truoc") + rong("xa", "truoc")) / 2)
+        sau = min(sau, h - (rong("chinh", "sau") + rong("xa", "sau")) / 2)
+    return truoc, sau
+
+
+def test_chan_xa_di_chuyen_nhu_chan_gan():
+    q = _bon_quang(CFG)
+    for ten in ("sau", "truoc"):
+        ti_le = q[("xa", ten)] / q[("chinh", ten)]
+        assert ti_le >= 0.8, f"chân {ten} xa chỉ di chuyển {ti_le:.2f} lần chân gần (đứng một chỗ)"
+
+
+def test_buoc_deu_giua_bon_chan():
+    q = list(_bon_quang(CFG).values())
+    assert min(q) / max(q) >= 0.75, f"quãng bước không đều: {[round(x) for x in q]}"
+
+
+def test_khe_ban_chan_gan_xa_lon_hon_be_ngang_chan():
+    truoc, sau = _khe(CFG)
+    assert truoc >= KHE_TOI_THIEU_PX and sau >= KHE_TOI_THIEU_PX, f"khe trước {truoc:.0f} px, sau {sau:.0f} px (cần ≥ {KHE_TOI_THIEU_PX})"
+
+
+def test_dot_bien_chan_xa_dung_yen_bi_phat_hien():
     import copy
 
     mut = copy.deepcopy(CFG)
-    mut["chinh"]["chan"][1]["a"] = 0.5
-    mut["xa"]["chan"][1]["a"] = 0.5
-    f0, _ = _min_kc(CFG)
-    f1, _ = _min_kc(mut)
-    assert f1 < f0, f"đột biến không bị phát hiện: {f1:.1f} so với {f0:.1f}"
-    assert f1 < 0.8 * 1.6 * min(CFG["chinh"]["chan"][1]["r"], CFG["xa"]["r"])
+    for g in mut["xa"]["chan"]:
+        g["a"] = 0.0
+    q = _bon_quang(mut)
+    assert min(q[("xa", "sau")] / q[("chinh", "sau")], q[("xa", "truoc")] / q[("chinh", "truoc")]) < 0.8
+
+
+def test_dot_bien_bien_do_chan_truoc_bi_phat_hien():
+    """Đổi biên độ cả hai chân trước lên 0,6 phải làm khe bàn chân trước chồng nhau (khe < ngưỡng)."""
+    import copy
+
+    mut = copy.deepcopy(CFG)
+    mut["chinh"]["chan"][1]["a"] = 0.6
+    mut["xa"]["chan"][1]["a"] = 0.6
+    truoc, _ = _khe(mut)
+    assert truoc < KHE_TOI_THIEU_PX, f"đột biến không bị phát hiện: khe trước {truoc:.0f} px"
 
 
 # ---------- 4 đột biến trên bản sao (mỗi cái ít nhất một kiểm tra đỏ) ----------
