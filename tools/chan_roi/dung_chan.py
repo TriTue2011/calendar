@@ -1,9 +1,11 @@
-"""Đóng gói ảnh «chân vẽ rời» của một con vào frontend/chan/<khoá>/.
+"""Đóng gói ảnh «chân vẽ rời» của một con vào frontend/chan/<khoá>/ thành MỘT ảnh ghép (atlas.webp) + lich.json.
 
 Nguồn là thư mục `lap_*` do bộ ghép lớp tạo ra (thân không chân + chín tư thế mỗi chân, lớp gần và lớp xa).
   hai chân : lich.json {R:[x,y,w,h], khung, tu_the}, tệp than.webp, gan_<tư thế>.webp, xa_<tư thế>.webp
   bốn chân : lich.json {khung, bo:[{ten,R,dx,pg,px,tu_the}]}, tệp than.webp, <bộ>_gan_<tư thế>.webp, <bộ>_xa_<tư thế>.webp
-Ra: chan/<khoá>/lich.json (cùng một khuôn cho mọi con) + các ảnh webp, tên theo `<bộ>_gan|xa_<tư thế>.webp`.
+Ra: chan/<khoá>/atlas.webp (mọi ảnh xếp kệ vào một tấm) và chan/<khoá>/lich.json (cùng một khuôn cho mọi con):
+  {khung:[W,H], dy, atlas, than:[x,y], bo:[{ten, R:[x,y,w,h], dx, pg, px, tu_the:[{ten, t, gan:[x,y], xa:[x,y]}]}]}
+  Mỗi khung chân có kích thước R[2]×R[3]; thân có kích thước khung. Gộp một tấm để HACS chỉ tải 2 tệp mỗi con (trước là 38) và thẻ chỉ gọi 1 yêu cầu ảnh.
 
 Dùng: python tools/chan_roi/dung_chan.py <thư mục nguồn> <khoá> hai|bon [dx_chân_xa] [biên_độ_nhún]
   hai chân: chân xa lệch pha 0,5 và dịch ngang dx (mặc định -35); bốn chân: pha và độ lệch đọc từ lich.json.
@@ -16,39 +18,59 @@ from PIL import Image
 
 GOC = Path(__file__).resolve().parents[2]
 DICH = GOC / "custom_components" / "lich_viet" / "frontend" / "chan"
-
-
 TY_LE = 0.5
+BE_RONG_TAM = 2048
+LE = 2   # khoảng đệm giữa hai khung trong tấm
 
 
-def thu(nguon: Path, dich: Path) -> None:
+def thu(nguon: Path) -> Image.Image:
     im = Image.open(nguon).convert("RGBA")
-    im = im.resize((max(1, round(im.width * TY_LE)), max(1, round(im.height * TY_LE))), Image.LANCZOS)
-    im.save(dich, "WEBP", quality=88, method=6)
+    return im.resize((max(1, round(im.width * TY_LE)), max(1, round(im.height * TY_LE))), Image.LANCZOS)
+
+
+def xep_ke(muc: list[tuple[str, Image.Image]]) -> tuple[Image.Image, dict[str, list[int]]]:
+    """Xếp các ảnh theo kệ (cao trước); trả về tấm ảnh và vị trí [x, y] của từng khoá."""
+    vi_tri: dict[str, list[int]] = {}
+    x = y = hang = 0
+    for ten, im in sorted(muc, key=lambda m: -m[1].height):
+        if x and x + im.width > BE_RONG_TAM:
+            x, y, hang = 0, y + hang + LE, 0
+        vi_tri[ten] = [x, y]
+        x += im.width + LE
+        hang = max(hang, im.height)
+    tam = Image.new("RGBA", (BE_RONG_TAM, y + hang), (0, 0, 0, 0))
+    for ten, im in muc:
+        tam.paste(im, tuple(vi_tri[ten]))
+    return tam, vi_tri
 
 
 def main(nguon: Path, khoa: str, loai: str, dx: int = -35, dy: float = 5.0) -> None:
     d = json.loads((nguon / "lich.json").read_text(encoding="utf-8"))
     ra = DICH / khoa
     ra.mkdir(parents=True, exist_ok=True)
-    thu(nguon / "than.webp", ra / "than.webp")
+    muc = [("than", thu(nguon / "than.webp"))]
     if loai == "hai":
         bo = [{"ten": "chan", "R": d["R"], "dx": dx, "pg": 0.0, "px": 0.5, "tu_the": d["tu_the"]}]
-        for p in d["tu_the"]:
-            thu(nguon / f"gan_{p['ten']}.webp", ra / f"chan_gan_{p['ten']}.webp")
-            thu(nguon / f"xa_{p['ten']}.webp", ra / f"chan_xa_{p['ten']}.webp")
+        ten_tep = lambda b, lop, p: f"{lop}_{p}.webp"
     else:
         bo = d["bo"]
-        for b in bo:
-            for p in b["tu_the"]:
-                for l in ("gan", "xa"):
-                    thu(nguon / f"{b['ten']}_{l}_{p['ten']}.webp", ra / f"{b['ten']}_{l}_{p['ten']}.webp")
-    for b in bo:   # toạ độ thu theo ảnh; R còn là [x, y, rộng, cao] của vùng chân trong khung
+        ten_tep = lambda b, lop, p: f"{b['ten']}_{lop}_{p}.webp"
+    for b in bo:
+        for p in b["tu_the"]:
+            for lop in ("gan", "xa"):
+                muc.append((f"{b['ten']}/{lop}/{p['ten']}", thu(nguon / ten_tep(b, lop, p["ten"]))))
+    tam, vt = xep_ke(muc)
+    tam.save(ra / "atlas.webp", "WEBP", quality=88, method=6)
+    for b in bo:
         b["R"] = [round(v * TY_LE) for v in b["R"]]
         b["dx"] = round(b["dx"] * TY_LE)
-    cfg = {"khung": [round(v * TY_LE) for v in d["khung"]], "dy": dy * TY_LE, "than": "than.webp", "bo": bo}
+        b["tu_the"] = [{"ten": p["ten"], "t": p["t"], "gan": vt[f"{b['ten']}/gan/{p['ten']}"], "xa": vt[f"{b['ten']}/xa/{p['ten']}"]} for p in b["tu_the"]]
+    cfg = {"khung": [round(v * TY_LE) for v in d["khung"]], "dy": dy * TY_LE, "atlas": "atlas.webp", "than": vt["than"], "bo": bo}
     (ra / "lich.json").write_text(json.dumps(cfg, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(khoa, sum(f.stat().st_size for f in ra.iterdir()) // 1024, "KB", cfg["khung"])
+    for f in ra.glob("*.webp"):   # dọn ảnh rời của bản đóng gói cũ
+        if f.name != "atlas.webp":
+            f.unlink()
+    print(khoa, sum(f.stat().st_size for f in ra.iterdir()) // 1024, "KB", "tấm", tam.size, "khung", cfg["khung"])
 
 
 if __name__ == "__main__":

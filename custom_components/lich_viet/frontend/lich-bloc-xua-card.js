@@ -9,7 +9,7 @@ import {
 } from './lich-am-duong-viet-nam-core.js?v=20261005';
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 import { taoXuong } from './lich-bloc-xua-xuong.js';
-import { duongDanAnh, taoChan } from './lich-bloc-xua-chan.js';
+import { taoChan } from './lich-bloc-xua-chan.js';
 
 const THU_ANH = {
   // Mỗi sprite sheet là lưới 6 cột × 3 hàng = 18 khung: khung 0–15 là MỘT CHU KỲ BƯỚC THẬT gồm 16 tư thế (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều
@@ -23,13 +23,12 @@ const GOC = new URL("./thu/", import.meta.url).href;
 const GOC_NEN = new URL("./nen/", import.meta.url).href;
 // Con giáp vẽ bằng xương (WebGL) thay vì sprite: khoá -> tệp cấu hình + ảnh lớp.
 // Mở rộng cho mọi khoá có cấu hình + ảnh trong thư mục xuong/. Con nào thiếu -> sprite như cũ.
+// Rồng và rắn KHÔNG nằm ở đây: bản sprite uốn sóng trông đẹp hơn bộ xương, nên hai con này dùng sprite.
 const THU_XUONG = {
   cho: { chinh: "xuong/cho-chinh.webp", xa: "xuong/cho-xa.webp", cfg: "xuong/cho.json" },
   suu: { chinh: "xuong/suu-chinh.webp", xa: "xuong/suu-xa.webp", cfg: "xuong/suu.json" },
   dan: { chinh: "xuong/dan-chinh.webp", xa: "xuong/dan-xa.webp", cfg: "xuong/dan.json" },
   mao: { chinh: "xuong/mao-chinh.webp", xa: "xuong/mao-xa.webp", cfg: "xuong/mao.json" },
-  thin: { chinh: "xuong/thin-chinh.webp", cfg: "xuong/thin.json" },
-  ran: { chinh: "xuong/ran-chinh.webp", cfg: "xuong/ran.json" },
   ngo: { chinh: "xuong/ngo-chinh.webp", xa: "xuong/ngo-xa.webp", cfg: "xuong/ngo.json" },
   mui: { chinh: "xuong/mui-chinh.webp", xa: "xuong/mui-xa.webp", cfg: "xuong/mui.json" },
   than: { chinh: "xuong/than-chinh.webp", xa: "xuong/than-xa.webp", cfg: "xuong/than.json" },
@@ -39,15 +38,17 @@ const THU_XUONG = {
 };
 // Con giáp vẽ bằng «chân vẽ rời» (Canvas 2D, không cần WebGL): thân một ảnh không chân + mỗi chân chín tư thế
 // vẽ riêng, ghép lớp chân xa → thân → chân gần. Ưu tiên hơn xương và sprite; thiếu/lỗi tệp thì rơi về xương rồi sprite.
-// Rồng và rắn không có chân nên vẫn đi đường xương (uốn sóng).
+// Rồng và rắn không có chân nên dùng sprite uốn sóng.
 const THU_CHAN = new Set(["ga", "than", "ty", "cho", "suu", "dan", "mao", "ngo", "mui", "heo"]);
 const _cfgChanCache = new Map();
 function taiCauHinhChan(khoa) {
   if (!_cfgChanCache.has(khoa)) {
-    _cfgChanCache.set(khoa, fetch(new URL(`./chan/${khoa}/lich.json`, import.meta.url)).then((r) => {
+    const p = fetch(new URL(`./chan/${khoa}/lich.json`, import.meta.url)).then((r) => {
       if (!r.ok) throw new Error("không tải được cấu hình chân " + khoa);
       return r.json();
-    }));
+    });
+    _cfgChanCache.set(khoa, p);
+    p.catch(() => _cfgChanCache.delete(khoa));   // lỗi mạng một lần thì lần sau tải lại
   }
   return _cfgChanCache.get(khoa);
 }
@@ -57,15 +58,19 @@ const taiMotAnh = (url) => new Promise((res, rej) => {
   im.onload = () => res(im); im.onerror = () => rej(new Error("không tải được ảnh " + url));
   im.src = url;
 });
+// Một tấm atlas duy nhất cho mỗi con (một yêu cầu tải, giải mã một lần); nhớ kết quả, lỗi thì lần sau tải lại.
 function taiAnhChan(khoa, cfg) {
   if (!_anhChanCache.has(khoa)) {
-    const goc = new URL(`./chan/${khoa}/`, import.meta.url).href, dd = duongDanAnh(cfg);
-    const nap = (l) => Promise.all(l.map((f) => taiMotAnh(goc + f)));
-    _anhChanCache.set(khoa, Promise.all([taiMotAnh(goc + dd.than), ...dd.bo.map(async (b) => ({ gan: await nap(b.gan), xa: await nap(b.xa) }))])
-      .then(([than, ...bo]) => ({ than, bo })));
-    _anhChanCache.get(khoa).catch(() => _anhChanCache.delete(khoa));   // lỗi mạng một lần thì lần sau thử lại
+    const p = taiMotAnh(new URL(`./chan/${khoa}/${cfg.atlas}`, import.meta.url).href);
+    _anhChanCache.set(khoa, p);
+    p.catch(() => _anhChanCache.delete(khoa));
   }
   return _anhChanCache.get(khoa);
+}
+// Tải sẵn con của ngày/tháng kế bên lúc rảnh, để đổi lịch là có hình ngay (không đợi mạng).
+function taiSanChan(khoa) {
+  if (!THU_CHAN.has(khoa)) return;
+  taiCauHinhChan(khoa).then((cfg) => taiAnhChan(khoa, cfg)).catch(() => { /* lỗi thì lúc cần sẽ tải lại */ });
 }
 // Thử tạo ngữ cảnh WebGL một lần, nhớ kết quả; huỷ ngay ngữ cảnh thử để khỏi
 // tốn suất (~16 ngữ cảnh/trình duyệt).
@@ -285,7 +290,7 @@ button{font:inherit;color:inherit}
 .sukien{display:flex;flex-wrap:wrap;gap:1cqw;justify-content:center;font-size:3.2cqw}
 .sukien span{background:#fff8e6;border:.3cqw solid var(--vang);border-radius:99px;padding:.3cqw 2.2cqw}
 .bong-to{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;background:linear-gradient(180deg,rgba(255,255,255,.0) 0,rgba(40,20,5,.45) 100%)}
-.canh-xe{position:absolute;z-index:7;top:5.6cqw;right:0;width:13cqw;height:13cqw;pointer-events:none;
+.canh-xe{position:absolute;z-index:7;top:24.6cqw;right:0;width:13cqw;height:13cqw;pointer-events:none;
  background:linear-gradient(225deg,rgba(0,0,0,0) 48%,rgba(90,60,20,.28) 50%,#fff7e0 52%,#e3d2a6 100%);border-radius:0 0 0 2cqw;transition:width .25s,height .25s;opacity:.0}
 .banh{position:absolute;top:1.4cqw;right:1.8cqw;z-index:30;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,244,217,.55);background:rgba(45,27,16,.55);color:#fff4d9;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;opacity:.7;transition:opacity .2s,transform .3s;-webkit-tap-highlight-color:transparent}
 .banh:hover,.banh.mo{opacity:1}.banh.mo{transform:rotate(60deg)}
@@ -300,7 +305,7 @@ button{font:inherit;color:inherit}
 .cd-nut button{border:1px solid var(--vien);background:#fff8e6;color:var(--vien);border-radius:99px;padding:5px 14px;font:inherit;font-weight:700;cursor:pointer}
 .cd-nut .chinh{background:var(--vien);color:#fff4d9}
 .cd-chuthich{margin-top:6px;font-size:11px;opacity:.6;text-align:right}
-.ban:hover .canh-xe{opacity:1}
+@media (hover:hover){.ban:hover .canh-xe{opacity:1}}   /* cảm ứng không có «rê chuột»: khỏi dính nếp gấp mãi sau khi chạm */
 /* thanh nút */
 .thanhnut{display:flex;flex-wrap:wrap;justify-content:center;gap:1.6cqw;margin-top:4cqw}
 .nut{border:.35cqw solid rgba(138,42,28,.55);background:#fff8e6;color:var(--vien);border-radius:99px;padding:1.2cqw 3cqw;font-size:3.3cqw;white-space:nowrap;font-weight:700;cursor:pointer;transition:transform .12s,background .2s}
@@ -481,6 +486,18 @@ class LichBlocXuaCard extends HTMLElement {
       }
     }
     if (this._xuongs.length) this._chayVongXuong();
+    this._taiSanKeBen();
+  }
+  // tải sẵn con của hai ngày (hoặc tháng) kế bên tờ đang hiện: bloc hiện ngày d và d+1 → tải d−1 và d+2; để bàn → tháng trước/sau.
+  _taiSanKeBen() {
+    const doi = (this._cfg.mode === "de_ban" ? [-1, 1] : [-1, 2]);
+    const chay = () => doi.forEach((n) => {
+      try {
+        const d = this._cfg.mode === "de_ban" ? new Date(this._ngay.getFullYear(), this._ngay.getMonth() + n, 15) : congNgay(this._ngay, n);
+        taiSanChan(chiThu(thongTinNgay(d), this._cfg.con_giap));
+      } catch (e) { /* không tải sẵn được cũng không sao */ }
+    });
+    (window.requestIdleCallback || ((f) => setTimeout(f, 300)))(chay);
   }
   _chayVongXuong() {
     if (this._rafXuong) return;
