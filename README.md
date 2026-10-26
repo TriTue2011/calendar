@@ -77,6 +77,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 ## Nhẹ cho dashboard
 
 - Con vật có chân là **ảnh WebP vẽ rời** (khoảng 3 MB cho cả mười con, mỗi con một tấm 200–400 KB, giải mã khoảng 15–20 MB bộ nhớ khi hiện; cả tích hợp còn 278 tệp nên HACS tải nhanh), ghép bằng Canvas 2D; **một vòng requestAnimationFrame cho cả thẻ**, chỉ chạy khi con vật đang bước và thẻ đang hiện. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền). Rắn và rồng dùng sprite CSS (không vòng lặp JavaScript); sprite cũng là dự phòng cho các con kia.
+- **Vừa màn hình**: bề rộng tối đa của thẻ tự co theo chiều cao màn hình (cả thẻ cao ≈ 1,9 lần bề rộng) nên trên điện thoại thấp thì thẻ nhỏ lại cho vừa, không phải cuộn; màn hình lớn vẫn là `rong` (mặc định 380 px).
 - **Chỉnh ngay trên thẻ**: bấm nút bánh răng ở góc trên bên phải để kéo thanh trượt *Tốc độ bước*, *Bước trong*, *Nghỉ*; áp dụng tức thì và nhớ riêng cho từng thiết bị (điện thoại và bảng treo tường có thể khác nhau). «Mặc định» quay về giá trị trong YAML. Giá trị trong YAML (`toc_do`, `chay_giay`, `nghi_giay`) là mặc định cho mọi thiết bị.
 - Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng, không vẽ lại; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Mức dùng CPU của bản chân vẽ rời **chưa đo** (số cũ ~2,8% là của bản sprite CSS).

@@ -185,6 +185,14 @@ def test_nep_gap_goc_khong_de_len_dong_thang_nam():
     assert "@media (hover:hover){.ban:hover .canh-xe{opacity:1}}" in js
 
 
+def test_the_vua_chieu_cao_man_hinh():
+    """Cả thẻ (kể cả hàng nút) cao ≈ 1,91 lần bề rộng: bề rộng tối đa phải co theo chiều cao màn hình để không tràn."""
+    js = THE.read_text(encoding="utf-8")
+    dong = next(l for l in js.splitlines() if l.startswith(".ban{"))
+    assert "max(240px,calc((100dvh - 96px) / 1.92))" in dong and "max(240px,calc((100vh - 96px) / 1.92))" in dong, "thiếu giới hạn theo chiều cao (dvh, có vh dự phòng)"
+    assert dong.index("100vh") < dong.index("100dvh"), "vh phải đứng trước dvh để trình duyệt cũ dùng vh, trình duyệt mới ghi đè bằng dvh"
+
+
 # ── Bộ vẽ JS thật (cần node) ───────────────────────────────────
 def _chay_node(ma: str) -> str:
     r = subprocess.run([NODE, "--input-type=module", "-e", ma], capture_output=True, text=True, timeout=60)

@@ -231,7 +231,7 @@ const CSS = `
 :host{display:block;--giay:#f6edd6;--giay2:#efe2c2;--muc:#2d1b10;--do:#b3261e;--vang:#c8962e;--xanh:#2a6a54;--vien:#8a2a1c;
  font-family:"Noto Serif","Source Serif 4",Georgia,"Times New Roman",serif;color:var(--muc);-webkit-tap-highlight-color:transparent}
 *{box-sizing:border-box}
-.ban{container-type:inline-size;position:relative;width:100%;max-width:var(--rong,380px);margin:0 auto;user-select:none;touch-action:pan-x}
+.ban{container-type:inline-size;position:relative;width:100%;max-width:min(var(--rong,380px),max(240px,calc((100vh - 96px) / 1.92)));max-width:min(var(--rong,380px),max(240px,calc((100dvh - 96px) / 1.92)));margin:0 auto;user-select:none;touch-action:pan-x}
 button{font:inherit;color:inherit}
 .giay{background-color:var(--giay);
  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .38 0 0 0 0 .26 0 0 0 0 .1 0 0 0 .1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
