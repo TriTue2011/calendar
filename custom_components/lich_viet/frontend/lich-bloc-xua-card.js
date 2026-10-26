@@ -490,8 +490,9 @@ class LichBlocXuaCard extends HTMLElement {
       if (chay) {
         const toc = Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
         if (this._gocXuong === undefined) this._gocXuong = now;
-        const t = (((now - this._gocXuong) / 1000) / 1.2 * toc) % 1;
-        for (const x of this._xuongs) { if (this._chayThu === false && x.nghi) x.nghi(); else x.ve(this._chayThu === false ? 0 : t); }
+        const u = ((now - this._gocXuong) / 1000) / 1.2 * toc;   // số chu kỳ 1,2 s đã trôi (chưa lấy phần dư)
+        // x.nhip: chân vẽ rời bước chậm hơn (0,6 → một vòng ~2 s, đúng nhịp bản demo đã duyệt); xương không có nhip thì giữ 1,2 s.
+        for (const x of this._xuongs) { if (this._chayThu === false && x.nghi) x.nghi(); else x.ve(this._chayThu === false ? 0 : (x.nhip ? u * x.nhip : u % 1)); }
       }
       this._rafXuong = requestAnimationFrame(buoc);
     };

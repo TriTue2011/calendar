@@ -147,6 +147,7 @@ def test_the_chon_dung_muoi_con_va_noi_vao_vong_ve():
     assert js.index("THU_CHAN.has(khoa)") < js.index("THU_XUONG[khoa] && coWebGL()"), "đường chân rời phải được thử trước xương"
     assert 'data-chan="1"' in js and "cv.dataset.chan" in js and "taoChan(cv, cfg, anh)" in js
     assert "x.nghi()" in js, "vòng vẽ phải gọi nghi() khi con vật đứng nghỉ"
+    assert "x.nhip ? u * x.nhip : u % 1" in js, "vòng vẽ phải nhân nhịp riêng của chân vẽ rời (chậm hơn xương)"
 
 
 # ── Bộ vẽ JS thật (cần node) ───────────────────────────────────
@@ -177,6 +178,7 @@ def test_bo_ve_thu_tu_lop_va_chon_tu_the():
         c.ve(0); ra.t0 = goi.splice(0).join("|");        // t=0: nhún 0
         c.ve(0.25); ra.t25 = goi.splice(0).join("|");
         ra.chiSo = [chiSoTuThe(tt, 0), chiSoTuThe(tt, .07), chiSoTuThe(tt, .08), chiSoTuThe(tt, .95)];
+        ra.nhip = c.nhip;
         c.huy(); c.ve(0.5); ra.sauHuy = goi.length;
         console.log(JSON.stringify(ra));
     """)
@@ -188,6 +190,7 @@ def test_bo_ve_thu_tu_lop_va_chon_tu_the():
     # t=0.25: nhún dy = -4*(0.5-0.5*cos(pi)) = -4
     assert ra["t25"].startswith("xoa|sxP6@8,36") and "THAN@0,-4" in ra["t25"]
     assert ra["chiSo"] == [0, 0, 1, 8]
+    assert ra["nhip"] == 0.6, "nhịp bước phải là 0,6 (một vòng ≈ 2 s như bản demo đã duyệt)"
     assert ra["sauHuy"] == 0
 
 

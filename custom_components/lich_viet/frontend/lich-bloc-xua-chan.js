@@ -2,13 +2,15 @@
 // chân là một chuỗi ảnh (chín tư thế) do model tạo ảnh vẽ riêng, ghép lớp trên Canvas 2D:
 //   chân xa (cùng chuỗi ảnh, sẫm hơn, lệch pha) → thân (nhún nhẹ) → chân gần.
 // Không dùng WebGL, không thư viện ngoài. Cách dùng:
-//   taoChan(canvas, cauHinh, anh) -> { ve(t), nghi(), dung(), huy() }
+//   taoChan(canvas, cauHinh, anh) -> { ve(t), nghi(), nhip, dung(), huy() }
 //   - cauHinh: frontend/chan/<khoá>/lich.json
 //   - anh: { than: <ảnh thân>, bo: [{ gan: [ảnh…], xa: [ảnh…] }, …] } cùng thứ tự cauHinh.bo
 //   - ve(t): vẽ tư thế ở pha t của chu kỳ (t = thời gian / 1,2 s, lấy phần dư theo 1).
 //   - nghi(): vẽ tư thế đứng nghỉ (mọi chân ở tư thế «đứng thẳng»), chỉ vẽ lại khi cần.
 
 const md = (t) => ((t % 1) + 1) % 1;
+// Nhịp bước: hệ số nhân vào đồng hồ chung của thẻ (một chu kỳ 1,2 s ở tốc độ 1). 0,6 ⇒ một vòng ≈ 2 s, đúng tốc độ bản demo chủ máy đã duyệt.
+const NHIP = 0.6;
 const DUNG = "P2_dung";   // tư thế chân thẳng đứng, bàn chân phẳng dưới khớp: dùng làm dáng đứng nghỉ
 
 // Tư thế đang hiện của một chân ở pha t: tư thế cuối cùng có t ≤ pha.
@@ -64,5 +66,5 @@ export function taoChan(canvas, cauHinh, anh) {
   };
 
   nghi();
-  return { ve, nghi, dung() {}, huy() { daHuy = true; } };
+  return { ve, nghi, nhip: cauHinh.nhip ?? NHIP, dung() {}, huy() { daHuy = true; } };
 }
