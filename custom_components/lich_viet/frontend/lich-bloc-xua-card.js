@@ -611,7 +611,7 @@ class LichBlocXuaCard extends HTMLElement {
     this._goc.innerHTML = `
       <div class="chong"><div class="ghim"><i></i></div>
         <div class="nen-to">
-          <div class="lop duoi">${duoi}<div class="bong-to"></div></div>
+          <div class="lop duoi" data-ngay="${iso(congNgay(this._ngay, 1))}">${duoi}<div class="bong-to"></div></div>
           <div class="lop tren">${tren}<div class="bong-to"></div></div>
         </div><div class="canh-xe"></div></div>
       ${this._cfg.nut ? `<div class="thanhnut"><button class="nut" data-h="truoc">‹ Hôm qua</button><button class="nut" data-h="nay">Hôm nay</button><button class="nut" data-h="sau">Ngày mai ›</button><button class="nut nho" data-h="doi" title="Chuyển sang lịch để bàn">⇄</button></div>` : ""}`;
@@ -624,8 +624,10 @@ class LichBlocXuaCard extends HTMLElement {
     this._huyXuong();
     const goc = this._goc, tren = goc.querySelector(".lop.tren"), duoi = goc.querySelector(".lop.duoi");
     const truoc = this._ngay; this._ngay = dich; this._theoHomNay = cungNgay(dich, new Date());
+    if (huong <= 0 && this._xeCtl) { this._xeCtl.huy(); this._xeCtl = null; }
     if (huong > 0) {
-      duoi.innerHTML = await this._traTo(dich) + '<div class="bong-to"></div>';
+      // tờ dưới đã là đúng ngày kế thì giữ nguyên (dựng lại làm hình chớp và trễ lúc bắt đầu xé)
+      if (duoi.dataset.ngay !== iso(dich)) { duoi.innerHTML = await this._traTo(dich) + '<div class="bong-to"></div>'; duoi.dataset.ngay = iso(dich); }
       await this._xeTo(tren, duoi, truoc, imLang);
     } else {
       tren.dataset.cu = "1";
@@ -640,15 +642,12 @@ class LichBlocXuaCard extends HTMLElement {
   // tới sát mép dán thì cả tờ bật rời, nghiêng và bay lên rồi mờ đi.
   // Nhẹ cho điện thoại: mỗi dải là một lớp chỉ rộng bằng vùng của chính nó (không phải cả tờ), không dùng bộ lọc (filter) nào,
   // sáng tối bằng lớp phủ màu mờ; chỉ 10 dải; ảnh con vật chụp một lần dùng chung.
-  async _xeTo(tren, duoi, ngay, imLang) {
-    const mo = async () => { await tren.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).finished.catch(() => {}); };
-    if (this._hieuUngTat() || imLang) return mo();
-    const chong = tren.closest(".chong"), nen = tren.parentElement; if (!chong || !nen) return mo();
+  // dựng các lớp bóc giấy trên tờ (chưa bóc gì: tờ trên che kín tờ dưới); trả bộ điều khiển {u, doi(u, r), huy(), xong()}
+  _dungXe(tren, duoi) {
+    const chong = tren.closest(".chong"), nen = tren.parentElement; if (!chong || !nen) return null;
     const W = tren.offsetWidth, H = tren.offsetHeight, rc = chong.getBoundingClientRect(), rt = tren.getBoundingClientRect();
     const ox = rt.left - rc.left, oy = rt.top - rc.top;   // gốc của tờ trong hệ toạ độ lớp «chong» (phủ lên cả thanh ghim)
     const dd = duoi.querySelector(".bong-to"), bt = tren.querySelector(".bong-to");
-    duoi.animate([{ transform: "scale(.982) translateY(.8%)", filter: "brightness(.9)" }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 1000, easing: "cubic-bezier(.3,.1,.2,1)", fill: "both" });
-    if (dd) dd.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 1000, fill: "forwards" });
     if (bt) bt.style.opacity = "0";
     // bản sao nội dung tờ để cắt dải: canvas con vật đổi thành ảnh tĩnh (chụp một lần), sprite dừng
     const anhCv = [...tren.querySelectorAll("canvas")].map((c) => { try { return c.toDataURL("image/png"); } catch (e) { return ""; } });
@@ -713,25 +712,47 @@ class LichBlocXuaCard extends HTMLElement {
       const mx = W / 2 - g.nx * g.R, my = g.yT - g.ny * g.R;   // điểm trên đường v = −R
       bong.style.clipPath = dangPoly(g.vungDay);
       bd.style.transform = `translate(${mx - dx * Lb / 2}px,${my - dy * Lb / 2}px) rotate(${goc}rad)`;
+      // tờ dưới nhích dần lên và sáng dần khi tờ trên được bóc (lúc đầu tờ trên che kín tờ dưới)
+      const lo = Math.min(1, u * 1.4);
+      duoi.style.transform = `scale(${(0.982 + 0.018 * lo).toFixed(4)}) translateY(${(0.8 * (1 - lo)).toFixed(3)}%)`;
+      if (dd) dd.style.opacity = String((0.7 * (1 - lo)).toFixed(3));   // tờ dưới tối dần → sáng dần bằng lớp phủ mờ (không filter)
       const ease = r * r, tx = -0.05 * W * ease, ty = -0.62 * H * ease, rot = -0.17 * ease, sc = 1 + 0.03 * r, op = r < 0.55 ? 1 : 1 - (r - 0.55) / 0.45;
       const tf = r > 0 ? `translate(${tx}px,${ty}px) rotate(${rot}rad) scale(${sc})` : "";
       tren.style.transform = tf; nhom.style.transform = tf; tren.style.opacity = nhom.style.opacity = String(op);
       bong.style.opacity = String(r > 0 ? 1 - r : 1);
     };
+    const ctl = {
+      u: 0, doi,
+      huy() {   // bỏ bóc dở: trả mọi thứ về như chưa chạm
+        nhom.remove(); bong.remove();
+        tren.style.clipPath = tren.style.transform = tren.style.opacity = tren.style.willChange = ""; if (bt) bt.style.opacity = "";
+        duoi.style.transform = ""; if (dd) dd.style.opacity = "";
+      },
+      xong() { nhom.remove(); bong.remove(); tren.style.visibility = "hidden"; },
+    };
     doi(0, 0);
-    await new Promise((fin) => requestAnimationFrame(() => requestAnimationFrame(fin)));   // cho trình duyệt dựng lớp xong rồi mới đếm giờ: không giật khung đầu
+    return ctl;
+  }
+  // bóc dần từ mức ctl.u (0 khi bấm nút; mức đang kéo khi vuốt) tới hết rồi bật rời; liền mạch với lúc kéo, không nhảy
+  async _xeTo(tren, duoi, ngay, imLang) {
+    const mo = async () => { await tren.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).finished.catch(() => {}); };
+    const dang = this._xeCtl; this._xeCtl = null;
+    if (this._hieuUngTat() || imLang) { if (dang) dang.huy(); return mo(); }
+    const ctl = dang || this._dungXe(tren, duoi);
+    if (!ctl) return mo();
+    if (!dang) await new Promise((fin) => requestAnimationFrame(() => requestAnimationFrame(fin)));   // cho trình duyệt dựng lớp xong rồi mới đếm giờ: không giật khung đầu
     await new Promise((fin) => {
-      const T_BOC = 760, T_RA = 340, t0 = performance.now();
+      const u0 = ctl.u, T_BOC = Math.max(260, 760 * (1 - u0)), T_RA = 340, t0 = performance.now();
       const nhip = (now) => {
         const t = now - t0;
-        if (t < T_BOC) doi(t / T_BOC, 0);
-        else if (t < T_BOC + T_RA) doi(1, (t - T_BOC) / T_RA);
+        if (t < T_BOC) { const q = t / T_BOC, e = u0 > 0 ? 1 - (1 - q) * (1 - q) : q * q * (3 - 2 * q); ctl.doi(u0 + (1 - u0) * e, 0); }
+        else if (t < T_BOC + T_RA) ctl.doi(1, (t - T_BOC) / T_RA);
         else return fin();
         requestAnimationFrame(nhip);
       };
       requestAnimationFrame(nhip);
     });
-    nhom.remove(); bong.remove(); tren.style.visibility = "hidden";
+    ctl.xong();
   }
   // dán lại (về ngày trước): tờ cũ rơi từ trên xuống, nảy nhẹ
   async _danTo(tren, duoi) {
@@ -839,23 +860,23 @@ class LichBlocXuaCard extends HTMLElement {
   _cuChi() {
     const ban = this._banEl; if (!ban || ban._cc) return; ban._cc = true;
     let y0 = null, t0 = 0, kt = null;
-    ban.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; y0 = e.clientY; t0 = performance.now(); kt = this._goc.querySelector(".lop.tren"); });
+    const huyKeo = () => { const c = this._xeCtl; if (!c) return; this._xeCtl = null; const t1 = performance.now(), u1 = c.u; const lui = (now) => { const q = Math.min(1, (now - t1) / 220); c.doi(u1 * (1 - q), 0); if (q < 1) requestAnimationFrame(lui); else c.huy(); }; requestAnimationFrame(lui); };
+    ban.addEventListener("pointerdown", (e) => { if (e.target.closest("button") || this._anim) return; y0 = e.clientY; t0 = performance.now(); kt = this._goc.querySelector(".lop.tren"); });
     ban.addEventListener("pointermove", (e) => {
       if (y0 == null || this._anim) return;
       const dy = y0 - e.clientY;
-      if (this._cfg.mode === "bloc" && kt && dy > 0) {
-        const p = Math.min(1, dy / (ban.clientHeight * 0.45));
-        kt.style.transform = `rotateX(${-p * 26}deg) rotateZ(${-p * 3.2}deg) translate3d(${-p * 1.5}%,${-p * 1.5}%,${p * 20}px)`;
-        const b = kt.querySelector(".bong-to"); if (b) b.style.opacity = String(p * 0.5);
+      if (this._cfg.mode === "bloc" && kt && dy > 6 && !this._hieuUngTat()) {
+        // kéo lên: chính cuộn giấy bóc dần theo ngón tay (tờ trên che kín tờ dưới rồi nhả dần), không nghiêng cứng rồi giật về
+        if (!this._xeCtl) this._xeCtl = this._dungXe(kt, this._goc.querySelector(".lop.duoi"));
+        const c = this._xeCtl; if (c) { c.u = Math.min(0.6, (dy - 6) / (ban.clientHeight * 0.4) * 0.6); c.doi(c.u, 0); }
       }
     });
     const xong = (e) => {
       if (y0 == null) return; const dy = y0 - e.clientY, dt = performance.now() - t0; y0 = null;
-      if (kt) { kt.style.transform = ""; const b = kt.querySelector(".bong-to"); if (b) b.style.opacity = ""; }
       const nhanh = Math.abs(dy) / Math.max(dt, 1) > 0.5;
-      if (dy > 40 || (nhanh && dy > 20)) this._hanhDong("sau"); else if (dy < -40 || (nhanh && dy < -20)) this._hanhDong("truoc");
+      if (dy > 40 || (nhanh && dy > 20)) this._hanhDong("sau"); else { huyKeo(); if (dy < -40 || (nhanh && dy < -20)) this._hanhDong("truoc"); }
     };
-    ban.addEventListener("pointerup", xong); ban.addEventListener("pointercancel", () => { y0 = null; if (kt) kt.style.transform = ""; });
+    ban.addEventListener("pointerup", xong); ban.addEventListener("pointercancel", () => { y0 = null; huyKeo(); });
     this.tabIndex = 0;
     this.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowUp") this._hanhDong("sau"); else if (e.key === "ArrowLeft" || e.key === "ArrowDown") this._hanhDong("truoc"); });
   }

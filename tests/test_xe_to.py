@@ -101,12 +101,26 @@ def test_phan_chia_to_khong_ho_khong_chong():
 def test_the_dung_giay_cong():
     js = THE.read_text(encoding="utf-8")
     assert "import { cuonGiay, dangPoly } from './lich-bloc-xua-giay.js'" in js
-    than = js.split("async _xeTo(", 1)[1].split("// dán lại", 1)[0]
+    than = js.split("_dungXe(tren, duoi) {", 1)[1].split("// dán lại", 1)[0]
     assert "cuonGiay(W, H, u, N)" in than and "cloneNode(true)" in than, "phải cuộn giấy theo dải cong và có mặt sau lộ chữ mờ"
     assert "const N = 10" in than, "10 dải: đủ cong mà nhẹ cho điện thoại (18 dải làm rớt khung hình)"
     assert "drop-shadow" not in than and "grayscale" not in than and "brightness(" not in than.split("const doi", 1)[1], "không dùng filter trong vòng vẽ: filter bắt mỗi dải dựng lớp riêng cỡ cả tờ"
     assert "hop(d.poly)" in than, "mỗi dải phải là lớp nhỏ theo hộp bao của chính nó, không phải cả tờ"
-    assert than.index("doi(0, 0)") < than.index("T_BOC = 760"), "dựng lớp xong (hai khung) rồi mới đếm giờ để khung đầu không giật"
+    assert "if (!dang) await new Promise((fin) => requestAnimationFrame(() => requestAnimationFrame(fin)))" in than, "bấm nút: dựng lớp xong (hai khung) rồi mới đếm giờ để khung đầu không giật"
     assert "nhom.remove()" in than and "bong.remove()" in than, "xong phải dọn lớp phụ"
     assert "mepRach" not in js and "rotateX(-116deg)" not in than and "nepGap" not in js, "hiệu ứng lật/gập phẳng cũ phải bỏ"
     assert "this._hieuUngTat() || imLang" in than, "giảm chuyển động/chạy im lặng vẫn chỉ mờ đi"
+
+
+def test_vuot_keo_chay_chinh_cuon_giay_va_lien_mach_khi_tha():
+    """Vuốt lên: chính cuộn giấy bóc dần theo ngón tay (tờ trên che kín tờ dưới lúc đầu), thả thì chạy tiếp từ mức đang kéo, không nghiêng cứng rồi giật về."""
+    js = THE.read_text(encoding="utf-8")
+    cu_chi = js.split("_cuChi() {", 1)[1].split("this.tabIndex = 0;", 1)[0]
+    assert "this._dungXe(kt," in cu_chi and "c.doi(c.u, 0)" in cu_chi, "kéo phải điều khiển cuộn giấy"
+    assert "rotateX" not in cu_chi, "bỏ kiểu nghiêng cứng khi kéo (làm tờ giật về khi thả)"
+    assert "huyKeo()" in cu_chi, "kéo ngắn rồi thả phải trả về chỗ cũ"
+    xe = js.split("async _xeTo(", 1)[1].split("// dán lại", 1)[0]
+    assert "const u0 = ctl.u" in xe and "u0 + (1 - u0) * e" in xe, "chạy tiếp từ mức đang kéo"
+    chuyen = js.split("async _chuyenNgay(", 1)[1].split("_xeTo(tren, duoi", 1)[0]
+    assert 'duoi.dataset.ngay !== iso(dich)' in chuyen, "tờ dưới đã đúng ngày thì không dựng lại (hình chớp, trễ lúc bắt đầu)"
+    assert 'data-ngay="${iso(congNgay(this._ngay, 1))}"' in js
