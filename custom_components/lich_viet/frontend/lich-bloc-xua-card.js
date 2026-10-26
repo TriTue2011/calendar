@@ -10,6 +10,7 @@ import {
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 import { taoXuong } from './lich-bloc-xua-xuong.js';
 import { taoChan } from './lich-bloc-xua-chan.js';
+import { dangPoly, nepGap } from './lich-bloc-xua-giay.js';
 
 const THU_ANH = {
   // Mỗi sprite sheet là lưới 6 cột × 3 hàng = 18 khung: khung 0–15 là MỘT CHU KỲ BƯỚC THẬT gồm 16 tư thế (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều
@@ -359,13 +360,6 @@ ${SPRITE_CSS}
 `;
 
 // ---------- mép rách ngẫu nhiên (theo ngày) ----------
-function mepRach(seed) {
-  let x = (seed * 9301 + 49297) % 233280, pts = ["0% 0%"];
-  for (let p = 0; p <= 100; p += 2.5) { x = (x * 9301 + 49297) % 233280; pts.push(`${p}% ${(x / 233280 * 1.5).toFixed(2)}%`); }
-  pts.push("100% 0%", "100% 100%", "0% 100%");
-  return `polygon(${pts.join(",")})`;
-}
-
 class LichBlocXuaCard extends HTMLElement {
   constructor() {
     super();
@@ -641,22 +635,62 @@ class LichBlocXuaCard extends HTMLElement {
     }
     await this._veBloc(); this._lichThu(); this._capNhatChay(); this._gan(); this._taiSuKien(); this._anim = false;
   }
-  // xé tờ: nhấc mép dưới, lật quanh đường răng cưa phía trên rồi bay lên
+  // xé tờ như giấy thật: góc dưới phải bị bóc lên, nếp gấp quét dọc tờ (nghiêng, bên phải nhấc trước), phần giấy gập hiện mặt sau,
+  // đổ bóng xuống tờ dưới; tới sát mép trên (chỗ dán) thì cả tờ bật rời, nghiêng và bay lên rồi mờ đi.
   async _xeTo(tren, duoi, ngay, imLang) {
     if (this._hieuUngTat() || imLang) { await tren.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).finished.catch(() => {}); return; }
-    tren.style.clipPath = mepRach(ngay.getDate() + ngay.getMonth() * 31);
-    const bt = tren.querySelector(".bong-to"), dd = duoi.querySelector(".bong-to");
-    duoi.animate([{ transform: "scale(.982) translateY(.8%)", filter: "brightness(.9)" }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 900, easing: "cubic-bezier(.3,.1,.2,1)", fill: "both" });
-    dd.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 900, fill: "forwards" });
-    bt.animate([{ opacity: 0 }, { opacity: 0.1, offset: 0.2 }, { opacity: 0.5, offset: 0.62 }, { opacity: 0.7 }], { duration: 900, fill: "forwards" });
-    const a = tren.animate([
-      { transform: "rotateX(0) rotateZ(0) translate3d(0,0,0)", offset: 0, easing: "cubic-bezier(.3,0,.5,1)" },
-      { transform: "rotateX(-5deg) rotateZ(-1.6deg) translate3d(-.4%,-.3%,6px)", offset: 0.15, easing: "cubic-bezier(.4,0,.8,.6)" },
-      { transform: "rotateX(-22deg) rotateZ(-3.4deg) translate3d(-1.6%,-1.5%,22px)", offset: 0.34 },
-      { transform: "rotateX(-70deg) rotateZ(-9deg) translate3d(-7%,-22%,70px)", offset: 0.68, opacity: 1 },
-      { transform: "rotateX(-116deg) rotateZ(-17deg) translate3d(-16%,-58%,100px)", offset: 1, opacity: 0 },
-    ], { duration: 940, fill: "forwards", easing: "linear" });
-    await a.finished.catch(() => {});
+    const chong = tren.closest(".chong"), nen = tren.parentElement; if (!chong || !nen) { await tren.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).finished.catch(() => {}); return; }
+    const W = tren.offsetWidth, H = tren.offsetHeight, rc = chong.getBoundingClientRect(), rt = tren.getBoundingClientRect();
+    const ox = rt.left - rc.left, oy = rt.top - rc.top;   // gốc của tờ trong hệ toạ độ lớp «chong» (phủ lên cả thanh ghim)
+    const dd = duoi.querySelector(".bong-to"), bt = tren.querySelector(".bong-to");
+    duoi.animate([{ transform: "scale(.982) translateY(.8%)", filter: "brightness(.9)" }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 1000, easing: "cubic-bezier(.3,.1,.2,1)", fill: "both" });
+    if (dd) dd.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 1000, fill: "forwards" });
+    if (bt) bt.style.opacity = "0";
+    // lớp mặt sau của phần giấy gập (hộp rộng hơn tờ để phần gập thò ra ngoài vẫn thấy) + bóng đổ mềm quanh mép
+    const gap = document.createElement("div");
+    const BX = 0.35 * W, BY = H;   // toạ độ gốc tờ trong hộp của lớp gập
+    gap.style.cssText = `position:absolute;left:${ox - BX}px;top:${oy - BY}px;width:${1.7 * W}px;height:${2 * H}px;z-index:9;pointer-events:none;transform-origin:${BX + W / 2}px ${BY}px;filter:drop-shadow(0 0 .4px rgba(90,60,20,.7)) drop-shadow(0 1.1cqw 1.5cqw rgba(40,20,5,.42))`;
+    const mat = document.createElement("div"); mat.className = "giay"; mat.style.cssText = "position:absolute;inset:0;filter:brightness(.965) saturate(.92)";
+    const L = Math.hypot(W, H) * 1.6;   // chiều dài các dải dọc nếp gấp (đủ phủ hết tờ ở mọi góc nghiêng)
+    // dải sáng tối quanh nếp gấp trên mặt sau: giấy cong ở chỗ gập (sậm sát nếp, vệt sáng, rồi phai). Gốc dưới-trái đặt đúng trên nếp, mọc lên phía phần gập.
+    const nep = document.createElement("div");
+    nep.style.cssText = `position:absolute;left:0;top:0;width:${L}px;height:${L}px;transform-origin:0 100%;pointer-events:none;background:linear-gradient(0deg,rgba(60,38,12,.5) 0,rgba(255,252,238,.7) 1.1cqw,rgba(120,90,50,.16) 3.6cqw,rgba(255,252,238,0) 8cqw)`;
+    // mặt sau giấy mỏng lộ mờ chữ mặt trước, lật gương qua nếp gấp (bản sao nội dung tờ, phản chiếu bằng ma trận)
+    const eco = tren.cloneNode(true); eco.removeAttribute("style"); eco.querySelectorAll(".bong-to,canvas,.spx").forEach((e) => e.remove());
+    eco.style.cssText = `position:absolute;left:${BX}px;top:${BY}px;width:${W}px;height:${H}px;margin:0;transform-origin:0 0;opacity:.11;filter:grayscale(.5);pointer-events:none;overflow:hidden`;
+    mat.appendChild(eco); mat.appendChild(nep); gap.appendChild(mat); chong.appendChild(gap);
+    // bóng trên tờ dưới, sát nếp gấp, phía phần giấy vừa bóc đi (cắt theo vùng góc)
+    const bong = document.createElement("div"); bong.style.cssText = "position:absolute;inset:0;z-index:2;pointer-events:none";
+    const dai = document.createElement("div");
+    dai.style.cssText = `position:absolute;left:0;top:0;width:${L}px;height:${(0.07 * W).toFixed(1)}px;transform-origin:0 0;background:linear-gradient(180deg,rgba(40,22,6,.5) 0,rgba(40,22,6,0) 100%)`;
+    bong.appendChild(dai); nen.appendChild(bong);
+    tren.style.willChange = "clip-path, transform";
+    const doi = (u, r) => {
+      const g = nepGap(W, H, u), Mx = W / 2, My = g.yq, dx = Math.cos(g.al), dy = -Math.sin(g.al), goc = Math.atan2(dy, dx);
+      const px = Mx - dx * L / 2, py = My - dy * L / 2;   // đầu trái của nếp gấp
+      tren.style.clipPath = dangPoly(g.truoc);
+      mat.style.clipPath = dangPoly(g.gap, BX, BY);
+      eco.style.transform = `matrix(${1 - 2 * g.nx * g.nx},${-2 * g.nx * g.ny},${-2 * g.nx * g.ny},${1 - 2 * g.ny * g.ny},${-2 * g.c * g.nx},${-2 * g.c * g.ny})`;
+      nep.style.transform = `translate(${BX + px}px,${BY + py - L}px) rotate(${goc}rad)`;
+      bong.style.clipPath = dangPoly(g.goc);
+      dai.style.transform = `translate(${px}px,${py}px) rotate(${goc}rad)`;
+      const ease = r * r, tx = -0.05 * W * ease, ty = -0.62 * H * ease, rot = -0.17 * ease, sc = 1 + 0.03 * r, op = r < 0.55 ? 1 : 1 - (r - 0.55) / 0.45;
+      const tf = r > 0 ? `translate(${tx}px,${ty}px) rotate(${rot}rad) scale(${sc})` : "";
+      tren.style.transform = tf; gap.style.transform = tf; tren.style.opacity = gap.style.opacity = String(op);
+      bong.style.opacity = String(r > 0 ? 1 - r : 1);
+    };
+    await new Promise((fin) => {
+      const T_BOC = 700, T_RA = 340, t0 = performance.now();
+      const nhip = (now) => {
+        const t = now - t0;
+        if (t < T_BOC) doi(t / T_BOC, 0);
+        else if (t < T_BOC + T_RA) doi(1, (t - T_BOC) / T_RA);
+        else return fin();
+        requestAnimationFrame(nhip);
+      };
+      requestAnimationFrame(nhip);
+    });
+    gap.remove(); bong.remove(); tren.style.visibility = "hidden";
   }
   // dán lại (về ngày trước): tờ cũ rơi từ trên xuống, nảy nhẹ
   async _danTo(tren, duoi) {
