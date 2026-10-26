@@ -375,6 +375,8 @@ class LichBlocXuaCard extends HTMLElement {
   _khoaLuu() { return "lich_viet_card:" + (this._cfg.calendar_entity || "") + ":" + (this._cfg.mode || ""); }
   _docLuu() { try { return JSON.parse(localStorage.getItem(this._khoaLuu()) || "{}") || {}; } catch (e) { return {}; } }
   _ghiLuu() { try { Object.keys(this._ghi).length ? localStorage.setItem(this._khoaLuu(), JSON.stringify(this._ghi)) : localStorage.removeItem(this._khoaLuu()); } catch (e) { /* không lưu được thì chỉ áp dụng phiên này */ } }
+  // hệ số tốc độ xé/dán/lật (1 = mặc định, 2 = nhanh gấp đôi), giới hạn 0,25–4; thời lượng = mặc định / hệ số
+  _heSoXe() { const v = +this._cai("toc_do_xe"); return Math.min(4, Math.max(0.25, v > 0 ? v : 1)); }
   _cai(k) { const v = this._ghi && this._ghi[k]; return v !== undefined ? v : this._cfg[k]; }
 
   setConfig(c) {
@@ -417,6 +419,7 @@ class LichBlocXuaCard extends HTMLElement {
     return `<button class="banh" type="button" data-banh title="Cài đặt chuyển động" aria-label="Cài đặt chuyển động"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg></button>
       <div class="cd" data-cd hidden><div class="cd-tieude">Chuyển động của con giáp</div>
         ${h("Tốc độ bước", "toc_do", 0.25, 3, 0.05, "1 là mặc định; nhỏ hơn là chậm hơn")}
+        ${h("Tốc độ xé tờ", "toc_do_xe", 0.25, 3, 0.05, "1 là mặc định; lớn hơn là xé/lật nhanh hơn")}
         ${h("Bước trong", "chay_giay", 1, 60, 1, "mỗi lần con vật bước bao lâu")}
         ${h("Nghỉ", "nghi_giay", 0, 300, 5, "nghỉ bao lâu rồi bước lại; 0 là bước liên tục")}
         <div class="cd-nut"><button type="button" data-mac>Mặc định</button><button type="button" data-xong class="chinh">Xong</button></div>
@@ -424,8 +427,8 @@ class LichBlocXuaCard extends HTMLElement {
   }
   _ganCaiDat() {
     const R = this.shadowRoot, panel = R.querySelector("[data-cd]"), banh = R.querySelector("[data-banh]"); if (!panel || !banh) return;
-    const mac = { toc_do: 1, chay_giay: 6, nghi_giay: 25 };
-    const hienGt = (k, v) => { const e = R.querySelector(`[data-gt="${k}"]`); if (e) e.textContent = k === "toc_do" ? "×" + (+v).toFixed(2) : (+v === 0 && k === "nghi_giay" ? "không nghỉ" : v + " giây"); };
+    const mac = { toc_do: 1, toc_do_xe: 1, chay_giay: 6, nghi_giay: 25 };
+    const hienGt = (k, v) => { const e = R.querySelector(`[data-gt="${k}"]`); if (e) e.textContent = k === "toc_do" || k === "toc_do_xe" ? "×" + (+v).toFixed(2) : (+v === 0 && k === "nghi_giay" ? "không nghỉ" : v + " giây"); };
     const dat = () => R.querySelectorAll("input[data-k]").forEach((i) => { const k = i.dataset.k, v = this._cai(k); i.value = v !== undefined && v !== "" ? v : mac[k]; hienGt(k, i.value); });
     dat();
     const apToc = () => R.querySelectorAll(".spx").forEach((e) => {
@@ -436,7 +439,7 @@ class LichBlocXuaCard extends HTMLElement {
     panel.addEventListener("pointerdown", (e) => e.stopPropagation());
     R.querySelectorAll("input[data-k]").forEach((i) => {
       i.addEventListener("input", () => { const k = i.dataset.k; this._ghi = { ...this._ghi, [k]: +i.value }; hienGt(k, i.value); if (k === "toc_do") apToc(); });
-      i.addEventListener("change", () => { this._ghiLuu(); if (i.dataset.k !== "toc_do") this._lichThu(); });
+      i.addEventListener("change", () => { this._ghiLuu(); if (i.dataset.k !== "toc_do" && i.dataset.k !== "toc_do_xe") this._lichThu(); });
     });
     R.querySelector("[data-mac]").addEventListener("click", () => { this._ghi = {}; this._ghiLuu(); dat(); apToc(); this._lichThu(); });
     R.querySelector("[data-xong]").addEventListener("click", () => { panel.hidden = true; banh.classList.remove("mo"); });
@@ -742,7 +745,7 @@ class LichBlocXuaCard extends HTMLElement {
     if (!ctl) return mo();
     if (!dang) await new Promise((fin) => requestAnimationFrame(() => requestAnimationFrame(fin)));   // cho trình duyệt dựng lớp xong rồi mới đếm giờ: không giật khung đầu
     await new Promise((fin) => {
-      const u0 = ctl.u, T_BOC = Math.max(260, 760 * (1 - u0)), T_RA = 340, t0 = performance.now();
+      const u0 = ctl.u, hs = this._heSoXe(), T_BOC = Math.max(260 / hs, 760 * (1 - u0) / hs), T_RA = 340 / hs, t0 = performance.now();
       const nhip = (now) => {
         const t = now - t0;
         if (t < T_BOC) { const q = t / T_BOC, e = u0 > 0 ? 1 - (1 - q) * (1 - q) : q * q * (3 - 2 * q); ctl.doi(u0 + (1 - u0) * e, 0); }
@@ -762,7 +765,7 @@ class LichBlocXuaCard extends HTMLElement {
       { transform: "rotateX(-50deg) rotateZ(-6deg) translate3d(-5%,-14%,50px)", opacity: 1, offset: 0.45, easing: "ease-in" },
       { transform: "rotateX(4deg) rotateZ(.4deg) translate3d(0,.6%,0)", opacity: 1, offset: 0.82, easing: "ease-out" },
       { transform: "rotateX(0) rotateZ(0)", opacity: 1, offset: 1 },
-    ], { duration: 820, fill: "both" });
+    ], { duration: 820 / this._heSoXe(), fill: "both" });
     await a.finished.catch(() => {});
   }
 
@@ -850,8 +853,8 @@ class LichBlocXuaCard extends HTMLElement {
     trang.appendChild(lop);
     const keyNext = [{ transform: "rotateX(0)" }, { transform: "rotateX(-14deg)", offset: .16 }, { transform: "rotateX(-96deg)", offset: .6 }, { transform: "rotateX(-172deg)", offset: .92 }, { transform: "rotateX(-180deg)" }];
     const keyPrev = [{ transform: "rotateX(-180deg)" }, { transform: "rotateX(-84deg)", offset: .4 }, { transform: "rotateX(6deg)", offset: .86 }, { transform: "rotateX(0)" }];
-    const a = lop.animate(huong > 0 ? keyNext : keyPrev, { duration: 900, easing: "cubic-bezier(.45,.05,.3,1)", fill: "forwards" });
-    bong.animate([{ opacity: 0 }, { opacity: .6, offset: .5 }, { opacity: 0 }], { duration: 900 });
+    const a = lop.animate(huong > 0 ? keyNext : keyPrev, { duration: 900 / this._heSoXe(), easing: "cubic-bezier(.45,.05,.3,1)", fill: "forwards" });
+    bong.animate([{ opacity: 0 }, { opacity: .6, offset: .5 }, { opacity: 0 }], { duration: 900 / this._heSoXe() });
     await a.finished.catch(() => {});
     return xong();
   }
@@ -884,19 +887,20 @@ class LichBlocXuaCard extends HTMLElement {
 
 
 // ---------- hộp cấu hình trong trình chỉnh thẻ của Home Assistant (dùng ha-form có sẵn của HA) ----------
-const MAC_DINH = { mode: "bloc", con_giap: "ngay", hoat_hoa: true, nut: true, toc_do: 1, chay_giay: 6, nghi_giay: 25, rong: 380 };
+const MAC_DINH = { mode: "bloc", con_giap: "ngay", hoat_hoa: true, nut: true, toc_do: 1, toc_do_xe: 1, chay_giay: 6, nghi_giay: 25, rong: 380 };
 const SCHEMA_SUA = [
   { name: "mode", selector: { select: { mode: "dropdown", options: [{ value: "bloc", label: "Tờ lịch bloc (xé từng ngày)" }, { value: "de_ban", label: "Lịch để bàn (lật tháng)" }] } } },
   { name: "calendar_entity", selector: { entity: { domain: "calendar" } } },
   { name: "con_giap", selector: { select: { mode: "dropdown", options: [{ value: "ngay", label: "Theo ngày (đổi mỗi tờ)" }, { value: "thang", label: "Theo tháng" }, { value: "nam", label: "Theo năm" }] } } },
   { name: "toc_do", selector: { number: { min: 0.25, max: 3, step: 0.05, mode: "slider" } } },
+  { name: "toc_do_xe", selector: { number: { min: 0.25, max: 3, step: 0.05, mode: "slider" } } },
   { name: "chay_giay", selector: { number: { min: 1, max: 60, step: 1, mode: "slider", unit_of_measurement: "giây" } } },
   { name: "nghi_giay", selector: { number: { min: 0, max: 300, step: 5, mode: "slider", unit_of_measurement: "giây" } } },
   { name: "hoat_hoa", selector: { boolean: {} } },
   { name: "nut", selector: { boolean: {} } },
   { name: "rong", selector: { number: { min: 260, max: 600, step: 10, mode: "box", unit_of_measurement: "px" } } },
 ];
-const NHAN_SUA = { mode: "Kiểu lịch", calendar_entity: "Lịch sự kiện (thực thể calendar)", con_giap: "Con giáp hiển thị", toc_do: "Tốc độ bước (1 = mặc định; nhỏ hơn là chậm hơn)",
+const NHAN_SUA = { toc_do_xe: "Tốc độ xé/lật tờ (1 = mặc định; lớn hơn là nhanh hơn)", mode: "Kiểu lịch", calendar_entity: "Lịch sự kiện (thực thể calendar)", con_giap: "Con giáp hiển thị", toc_do: "Tốc độ bước (1 = mặc định; nhỏ hơn là chậm hơn)",
   chay_giay: "Con vật bước trong bao lâu", nghi_giay: "Rồi đứng nghỉ bao lâu trước khi bước lại (0 = bước liên tục)", hoat_hoa: "Bật hoạt hoạ", nut: "Hiện hàng nút Hôm qua / Hôm nay / Ngày mai", rong: "Chiều rộng tối đa của thẻ" };
 class LichBlocXuaCardEditor extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: "open" }); this._cfg = {}; this._hass = null; }

@@ -124,3 +124,16 @@ def test_vuot_keo_chay_chinh_cuon_giay_va_lien_mach_khi_tha():
     chuyen = js.split("async _chuyenNgay(", 1)[1].split("_xeTo(tren, duoi", 1)[0]
     assert 'duoi.dataset.ngay !== iso(dich)' in chuyen, "tờ dưới đã đúng ngày thì không dựng lại (hình chớp, trễ lúc bắt đầu)"
     assert 'data-ngay="${iso(congNgay(this._ngay, 1))}"' in js
+
+
+def test_toc_do_xe_ap_cho_xe_dan_lat_va_co_o_cau_hinh():
+    """Hệ số tốc độ xé: thời lượng = mặc định / hệ số (giới hạn 0,25–4), có trong thẻ, bảng bánh răng, form cấu hình và README."""
+    js = THE.read_text(encoding="utf-8")
+    assert "_heSoXe() { const v = +this._cai(\"toc_do_xe\"); return Math.min(4, Math.max(0.25, v > 0 ? v : 1)); }" in js
+    xe = js.split("async _xeTo(", 1)[1].split("// dán lại", 1)[0]
+    assert "T_BOC = Math.max(260 / hs, 760 * (1 - u0) / hs), T_RA = 340 / hs" in xe
+    assert "820 / this._heSoXe()" in js, "dán lại tờ phải theo hệ số"
+    assert js.count("900 / this._heSoXe()") == 2, "lật tháng (tờ và bóng) phải theo hệ số"
+    assert 'h("Tốc độ xé tờ", "toc_do_xe"' in js and "toc_do_xe: 1" in js and 'name: "toc_do_xe"' in js and "toc_do_xe:" in js.split("const NHAN_SUA", 1)[1]
+    assert 'i.dataset.k !== "toc_do_xe"' in js, "kéo thanh tốc độ xé không được khởi động lại lịch nghỉ/chạy của con vật"
+    assert "toc_do_xe" in (GOC / "README.md").read_text(encoding="utf-8")
