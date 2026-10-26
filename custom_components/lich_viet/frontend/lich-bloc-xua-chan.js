@@ -5,7 +5,7 @@
 // được cắt bằng drawImage nguồn–đích. Không dùng WebGL, không thư viện ngoài. Cách dùng:
 //   taoChan(canvas, cauHinh, atlas) -> { ve(t), nghi(), nhip, dung(), huy() }
 //   - cauHinh: frontend/chan/<khoá>/lich.json
-//       { khung:[W,H], dy, atlas, than:[x,y], bo:[{ ten, R:[x,y,rộng,cao], dx, pg, px,
+//       { khung:[W,H], dy, atlas, than:[x,y], dung:{<bộ>:{gan,xa}} (tư thế đứng nghỉ), bo:[{ ten, R:[x,y,rộng,cao], dx, pg, px,
 //         tu_the:[{ ten, t, gan:[x,y], xa:[x,y] }] }] }   (toạ độ gan/xa/than là vị trí trong tấm)
 //   - atlas: ảnh tấm đã tải xong.
 //   - ve(t): vẽ tư thế ở pha t của chu kỳ (t = số chu kỳ trôi qua; lấy phần dư theo 1).
@@ -48,10 +48,12 @@ export function taoChan(canvas, cauHinh, atlas) {
     if (daHuy || daNghi) return;
     daNghi = true;
     cx.clearRect(0, 0, W, H);
-    const dung = (b) => b.tu_the[Math.max(0, b.tu_the.findIndex((p) => p.ten === DUNG))];
-    cauHinh.bo.forEach((b) => veChan(b, dung(b).xa, b.dx, 0));
+    // dáng đứng nghỉ: cặp tư thế (gần, xa) đã chọn lúc đóng gói sao cho chân xa hiện rõ ngoài chân gần (cùng P2_dung thì chân xa lọt sau chân gần, nhìn như mất chân)
+    const tim = (b, ten) => b.tu_the[Math.max(0, b.tu_the.findIndex((p) => p.ten === ten))];
+    const chon = (b) => ({ gan: tim(b, cauHinh.dung?.[b.ten]?.gan ?? DUNG), xa: tim(b, cauHinh.dung?.[b.ten]?.xa ?? DUNG) });
+    cauHinh.bo.forEach((b) => veChan(b, chon(b).xa.xa, b.dx, 0));
     veThan(0);
-    cauHinh.bo.forEach((b) => veChan(b, dung(b).gan, 0, 0));
+    cauHinh.bo.forEach((b) => veChan(b, chon(b).gan.gan, 0, 0));
   };
 
   nghi();

@@ -103,7 +103,10 @@ def test_the_dung_giay_cong():
     assert "import { cuonGiay, dangPoly } from './lich-bloc-xua-giay.js'" in js
     than = js.split("async _xeTo(", 1)[1].split("// dán lại", 1)[0]
     assert "cuonGiay(W, H, u, N)" in than and "cloneNode(true)" in than, "phải cuộn giấy theo dải cong và có mặt sau lộ chữ mờ"
-    assert "const N = 18" in than, "đủ dải để cong mượt (không thấy bậc)"
+    assert "const N = 10" in than, "10 dải: đủ cong mà nhẹ cho điện thoại (18 dải làm rớt khung hình)"
+    assert "drop-shadow" not in than and "grayscale" not in than and "brightness(" not in than.split("const doi", 1)[1], "không dùng filter trong vòng vẽ: filter bắt mỗi dải dựng lớp riêng cỡ cả tờ"
+    assert "hop(d.poly)" in than, "mỗi dải phải là lớp nhỏ theo hộp bao của chính nó, không phải cả tờ"
+    assert than.index("doi(0, 0)") < than.index("T_BOC = 760"), "dựng lớp xong (hai khung) rồi mới đếm giờ để khung đầu không giật"
     assert "nhom.remove()" in than and "bong.remove()" in than, "xong phải dọn lớp phụ"
     assert "mepRach" not in js and "rotateX(-116deg)" not in than and "nepGap" not in js, "hiệu ứng lật/gập phẳng cũ phải bỏ"
     assert "this._hieuUngTat() || imLang" in than, "giảm chuyển động/chạy im lặng vẫn chỉ mờ đi"

@@ -14,6 +14,7 @@ Dùng: python tools/chan_roi/dung_chan.py <thư mục nguồn> <khoá> hai|bon [
 import json, sys
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 GOC = Path(__file__).resolve().parents[2]
@@ -44,6 +45,37 @@ def xep_ke(muc: list[tuple[str, Image.Image]]) -> tuple[Image.Image, dict[str, l
     return tam, vi_tri
 
 
+# Tư thế chạm đất (đủ để đứng): chân gần chọn trong ĐUNG_GAN, chân xa trong ĐUNG_XA.
+DUNG_GAN = ("P1b_ha", "P2_dung", "P2b_day")
+DUNG_XA = ("P1_truoc", "P1b_ha", "P2_dung", "P2b_day", "P3_sau")
+
+
+def chon_dung(khung: tuple[int, int], than: Image.Image, bo: list[dict], anh: dict[str, Image.Image]) -> dict[str, dict[str, str]]:
+    """Với mỗi bộ chân, chọn cặp (gần, xa) đứng chạm đất sao cho chân xa HIỆN RÕ nhất: diện tích chân xa không bị thân và chân gần che.
+    Dáng đứng nghỉ cũ vẽ cả hai ở P2_dung nên chân xa lọt sau chân gần, nhìn như mất một chân."""
+    W, H = khung
+    a_than = np.array(than.getchannel("A")) > 20
+    ra: dict[str, dict[str, str]] = {}
+    for b in bo:
+        x0, y0, w, h = b["R"]
+        best = None
+        for g in DUNG_GAN:
+            ag = np.zeros((H, W), bool); ag[y0:y0 + h, x0:x0 + w] = np.array(anh[f"{b['ten']}/gan/{g}"].getchannel("A")) > 20
+            che = a_than | ag
+            for x in DUNG_XA:
+                ax = np.zeros((H, W), bool)
+                dx = b["dx"]
+                xs0, xs1 = x0 + dx, x0 + dx + w
+                sub = np.array(anh[f"{b['ten']}/xa/{x}"].getchannel("A")) > 20
+                ax[y0:y0 + h, max(0, xs0):min(W, xs1)] = sub[:, max(0, -xs0):w - max(0, xs1 - W)]
+                hien = int((ax & ~che).sum())
+                diem = hien - (0 if g == "P2_dung" else 0.02 * hien)   # ưu tiên nhẹ chân gần thẳng đứng khi hoà
+                if best is None or diem > best[0]:
+                    best = (diem, g, x)
+        ra[b["ten"]] = {"gan": best[1], "xa": best[2]}
+    return ra
+
+
 def main(nguon: Path, khoa: str, loai: str, dx: int = -35, dy: float = 5.0) -> None:
     d = json.loads((nguon / "lich.json").read_text(encoding="utf-8"))
     ra = DICH / khoa
@@ -59,18 +91,21 @@ def main(nguon: Path, khoa: str, loai: str, dx: int = -35, dy: float = 5.0) -> N
         for p in b["tu_the"]:
             for lop in ("gan", "xa"):
                 muc.append((f"{b['ten']}/{lop}/{p['ten']}", thu(nguon / ten_tep(b, lop, p["ten"]))))
+    anh = dict(muc)
+    dung = chon_dung((round(d["khung"][0] * TY_LE), round(d["khung"][1] * TY_LE)), anh["than"],
+                     [{**b, "R": [round(v * TY_LE) for v in b["R"]], "dx": round(b["dx"] * TY_LE)} for b in bo], anh)
     tam, vt = xep_ke(muc)
     tam.save(ra / "atlas.webp", "WEBP", quality=88, method=6)
     for b in bo:
         b["R"] = [round(v * TY_LE) for v in b["R"]]
         b["dx"] = round(b["dx"] * TY_LE)
         b["tu_the"] = [{"ten": p["ten"], "t": p["t"], "gan": vt[f"{b['ten']}/gan/{p['ten']}"], "xa": vt[f"{b['ten']}/xa/{p['ten']}"]} for p in b["tu_the"]]
-    cfg = {"khung": [round(v * TY_LE) for v in d["khung"]], "dy": dy * TY_LE, "atlas": "atlas.webp", "than": vt["than"], "bo": bo}
+    cfg = {"khung": [round(v * TY_LE) for v in d["khung"]], "dy": dy * TY_LE, "atlas": "atlas.webp", "than": vt["than"], "dung": dung, "bo": bo}
     (ra / "lich.json").write_text(json.dumps(cfg, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     for f in ra.glob("*.webp"):   # dọn ảnh rời của bản đóng gói cũ
         if f.name != "atlas.webp":
             f.unlink()
-    print(khoa, sum(f.stat().st_size for f in ra.iterdir()) // 1024, "KB", "tấm", tam.size, "khung", cfg["khung"])
+    print(khoa, dung, sum(f.stat().st_size for f in ra.iterdir()) // 1024, "KB", "tấm", tam.size, "khung", cfg["khung"])
 
 
 if __name__ == "__main__":

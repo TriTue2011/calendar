@@ -149,6 +149,30 @@ def test_pha_buoc_dung_quy_uoc():
         assert b["pg"] == 0 and b["px"] == 0.5, f"{khoa}: hai chân lệch nửa chu kỳ"
 
 
+@pytest.mark.parametrize("khoa", CO_CHAN)
+def test_dang_dung_nghi_chon_tu_the_that_va_tach_chan(khoa):
+    """Dáng đứng nghỉ phải có chân xa HIỆN RÕ: cặp tư thế đã chọn tồn tại, chạm đất, và chân xa lộ ra ngoài thân + chân gần."""
+    import numpy as np
+    cfg = _cfg(khoa)
+    tam = Image.open(CHAN / khoa / "atlas.webp")
+    W, H = cfg["khung"]
+    a = np.array(tam.crop((cfg["than"][0], cfg["than"][1], cfg["than"][0] + W, cfg["than"][1] + H)).getchannel("A")) > 20
+    for b in cfg["bo"]:
+        d = cfg["dung"][b["ten"]]
+        ten = {p["ten"]: p for p in b["tu_the"]}
+        assert d["gan"] in ten and d["xa"] in ten, f"{khoa}/{b['ten']}: tư thế đứng nghỉ không có trong chuỗi"
+        assert d["gan"] in ("P1b_ha", "P2_dung", "P2b_day") and d["xa"] in ("P1_truoc", "P1b_ha", "P2_dung", "P2b_day", "P3_sau"), "tư thế đứng nghỉ phải chạm đất"
+        x0, y0, w, h = b["R"]
+        def lop(l, p, dx):
+            m = np.zeros((H, W), bool); x, y = ten[p][l]
+            sub = np.array(tam.crop((x, y, x + w, y + h)).getchannel("A")) > 20
+            xs, xe = max(0, x0 + dx), min(W, x0 + dx + w)
+            m[y0:y0 + h, xs:xe] = sub[:, xs - (x0 + dx):xe - (x0 + dx)]
+            return m
+        hien = lop("xa", d["xa"], b["dx"]) & ~(a | lop("gan", d["gan"], 0))
+        assert hien.sum() >= 0.03 * (w * h), f"{khoa}/{b['ten']}: chân xa gần như bị che hết lúc đứng nghỉ ({int(hien.sum())} px)"
+
+
 def test_tong_dung_luong_anh():
     tong = sum(f.stat().st_size for f in CHAN.rglob("*.webp"))
     assert tong <= 3.5 * 1024 * 1024, f"{tong / 1024 / 1024:.2f} MB"
@@ -210,7 +234,7 @@ def test_bo_ve_thu_tu_lop_cat_khung_va_chon_tu_the():
         const cv = {{ getContext: () => cx }};
         // mỗi chân ở tư thế i nằm ở (100*i + {{gan:0|xa:50}}, 10 hoặc 20 theo bộ) trong tấm
         const mk = (y) => [0, .08, .18, .32, .46, .6, .7, .8, .9].map((t, i) => ({{ ten: i === 2 ? "P2_dung" : "P" + i, t, gan: [100 * i, y], xa: [100 * i + 50, y] }}));
-        const cau = {{ khung: [100, 80], dy: 4, atlas: "atlas.webp", than: [5, 6], bo: [
+        const cau = {{ khung: [100, 80], dy: 4, atlas: "atlas.webp", than: [5, 6], dung: {{ sau: {{ gan: "P2_dung", xa: "P4" }}, truoc: {{ gan: "P2_dung", xa: "P2_dung" }} }}, bo: [
           {{ ten: "sau", R: [10, 40, 30, 30], dx: -2, pg: 0, px: .5, tu_the: mk(300) }},
           {{ ten: "truoc", R: [60, 40, 30, 30], dx: 2, pg: -.25, px: .25, tu_the: mk(400) }} ]}};
         const tt = cau.bo[0].tu_the;
@@ -226,8 +250,8 @@ def test_bo_ve_thu_tu_lop_cat_khung_va_chon_tu_the():
         console.log(JSON.stringify(ra));
     """)
     ra = json.loads(_chay_node(ma))
-    # đứng nghỉ: chân xa P2_dung (x = 250 + 50 = 250? tư thế 2 → gan (200,y), xa (250,y)), thân (5,6) cỡ 100x80, chân gần P2_dung
-    assert ra["khoiDau"] == "xoa|250,300,30x30@8,40|250,400,30x30@62,40|5,6,100x80@0,0|200,300,30x30@10,40|200,400,30x30@60,40"
+    # đứng nghỉ theo cấu hình dung: sau xa P4 → xa (450,300); trước xa P2_dung → (250,400); gần P2_dung → (200,y)
+    assert ra["khoiDau"] == "xoa|450,300,30x30@8,40|250,400,30x30@62,40|5,6,100x80@0,0|200,300,30x30@10,40|200,400,30x30@60,40"
     assert ra["nghiLai"] == 0
     # t=0: sau gần P0 (pg 0); trước gần pha .75 → P6 (t .7); sau xa pha .5 → P4 (t .46); trước xa pha .25 → P2 (t .18)
     assert ra["t0"] == "xoa|450,300,30x30@8,40|250,400,30x30@62,40|5,6,100x80@0,0|0,300,30x30@10,40|600,400,30x30@60,40"

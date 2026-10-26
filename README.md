@@ -4,7 +4,7 @@
 
 Âm lịch Việt Nam, sự kiện giỗ/lễ/sinh nhật đếm ngược, thực thể **Lịch** của Home Assistant, và hai thẻ giao diện có con giáp động:
 
-- **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Tờ giấy bị bóc từ góc dưới phải và cong thành một cuộn (không gập phẳng): phần cong chia thành 18 dải mỏng, mỗi dải xoay theo góc cuộn và đổi sáng tối, qua nửa vòng thì hiện mặt sau mỏng lộ mờ chữ mặt trước rồi nằm ngược lại đè lên tờ, đổ bóng xuống tờ dưới, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
+- **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Tờ giấy bị bóc từ góc dưới phải và cong thành một cuộn (không gập phẳng): phần cong chia thành 10 dải mỏng (mỗi dải là một lớp nhỏ, không dùng bộ lọc, để điện thoại yếu không giật), mỗi dải xoay theo góc cuộn và đổi sáng tối, qua nửa vòng thì hiện mặt sau mỏng lộ mờ chữ mặt trước rồi nằm ngược lại đè lên tờ, đổ bóng xuống tờ dưới, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
 - **Lịch để bàn**: lịch tháng gáy lò xo, lật tờ qua gáy khi đổi tháng, chạm một ngày để xem chi tiết.
 - **Ảnh nền phong cảnh theo con giáp**: mỗi con giáp có 12 ảnh nền (12 tháng: đào Tết, đèn lồng, sen, phượng, trăng rằm, lúa chín, cúc, lá thu…) hợp với nơi ở của nó. Ảnh chỉ phủ phần đầu tờ bloc (đến đường gạch dưới dòng âm lịch) và khu lưới ngày của lịch để bàn, có lớp giấy mờ phủ lên để số ngày luôn rõ.
 - **Con giáp theo ngày**: mỗi tờ hiện con giáp của *ngày* đó (kèm huy hiệu tháng, năm), đổi liên tục khi sang ngày khác. Mười con có chân bước bằng chân vẽ rời (xem dưới); rắn và rồng uốn sóng; đều là giống đực.
@@ -24,7 +24,7 @@ Xé tờ (nhấc mép, lật bay lên để lộ tờ ngày hôm sau) và lật 
 <p align="center"><img src="docs/anh/xe-to.webp" alt="Các mốc xé tờ"></p>
 <p align="center"><img src="docs/anh/lat-thang.webp" alt="Các mốc lật tháng"></p>
 
-Con giáp có chân (chuột, trâu, hổ, mèo, ngựa, dê, khỉ, gà, chó, heo) bước bằng **chân vẽ rời**: thân là một ảnh không chân, mỗi chân là chín tư thế do mô hình tạo ảnh vẽ riêng (chân đặt trước, hạ xuống, đứng thẳng, đạp sau, nhấc lên, vung tới), ghép lớp trên Canvas 2D: chân xa (sẫm hơn, lệch pha) → thân (nhún nhẹ) → chân gần. Thú bốn chân bước so le một phần tư chu kỳ (sau gần, trước gần, sau xa, trước xa); khỉ và gà lệch nửa chu kỳ. Lúc nghỉ con vật đứng thẳng, bốn chân ở tư thế «đứng thẳng». Rắn và rồng không có chân nên dùng sprite uốn sóng (đẹp hơn bộ xương). Sprite cũng là phương án dự phòng nếu tải ảnh lỗi. Mỗi con có chân là một tấm ảnh ghép + một tệp cấu hình; thẻ tải sẵn con của ngày kế bên nên đổi lịch là có hình ngay:
+Con giáp có chân (chuột, trâu, hổ, mèo, ngựa, dê, khỉ, gà, chó, heo) bước bằng **chân vẽ rời**: thân là một ảnh không chân, mỗi chân là chín tư thế do mô hình tạo ảnh vẽ riêng (chân đặt trước, hạ xuống, đứng thẳng, đạp sau, nhấc lên, vung tới), ghép lớp trên Canvas 2D: chân xa (sẫm hơn, lệch pha) → thân (nhún nhẹ) → chân gần. Thú bốn chân bước so le một phần tư chu kỳ (sau gần, trước gần, sau xa, trước xa); khỉ và gà lệch nửa chu kỳ. Lúc nghỉ con vật đứng với đủ bốn chân tách nhau (chọn tự động cặp tư thế chạm đất sao cho chân xa lộ rõ, không lọt sau chân gần). Rắn và rồng không có chân nên dùng sprite uốn sóng (đẹp hơn bộ xương). Sprite cũng là phương án dự phòng nếu tải ảnh lỗi. Mỗi con có chân là một tấm ảnh ghép + một tệp cấu hình; thẻ tải sẵn con của ngày kế bên nên đổi lịch là có hình ngay:
 
 <p align="center"><img src="docs/anh/12-con-giap.webp" alt="Mười hai con giáp"></p>
 
@@ -79,7 +79,7 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 - Con vật có chân là **ảnh WebP vẽ rời** (khoảng 3 MB cho cả mười con, mỗi con một tấm 200–400 KB, giải mã khoảng 15–20 MB bộ nhớ khi hiện; cả tích hợp còn 278 tệp nên HACS tải nhanh), ghép bằng Canvas 2D; **một vòng requestAnimationFrame cho cả thẻ**, chỉ chạy khi con vật đang bước và thẻ đang hiện. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền). Rắn và rồng dùng sprite CSS (không vòng lặp JavaScript); sprite cũng là dự phòng cho các con kia.
 - **Vừa màn hình**: bề rộng tối đa của thẻ tự co theo chiều cao màn hình (cả thẻ cao ≈ 1,9 lần bề rộng) nên trên điện thoại thấp thì thẻ nhỏ lại cho vừa, không phải cuộn; màn hình lớn vẫn là `rong` (mặc định 380 px).
 - **Chỉnh ngay trên thẻ**: bấm nút bánh răng ở góc trên bên phải để kéo thanh trượt *Tốc độ bước*, *Bước trong*, *Nghỉ*; áp dụng tức thì và nhớ riêng cho từng thiết bị (điện thoại và bảng treo tường có thể khác nhau). «Mặc định» quay về giá trị trong YAML. Giá trị trong YAML (`toc_do`, `chay_giay`, `nghi_giay`) là mặc định cho mọi thiết bị.
-- Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng, không vẽ lại; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
+- Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng yên đủ chân, không vẽ lại; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Mức dùng CPU của bản chân vẽ rời **chưa đo** (số cũ ~2,8% là của bản sprite CSS).
 
 ## Giới hạn đã biết
