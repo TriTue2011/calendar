@@ -717,7 +717,7 @@ class LichBlocXuaCard extends HTMLElement {
       bd.style.transform = `translate(${mx - dx * Lb / 2}px,${my - dy * Lb / 2}px) rotate(${goc}rad)`;
       // tờ dưới nhích dần lên và sáng dần khi tờ trên được bóc (lúc đầu tờ trên che kín tờ dưới)
       const lo = Math.min(1, u * 1.4);
-      duoi.style.transform = `scale(${(0.982 + 0.018 * lo).toFixed(4)}) translateY(${(0.8 * (1 - lo)).toFixed(3)}%)`;
+      // KHÔNG đổi transform/scale của tờ dưới theo khung: đổi tỉ lệ làm trình duyệt dựng lại cả tờ mỗi khung (điện thoại ra ô trống)
       if (dd) dd.style.opacity = String((0.7 * (1 - lo)).toFixed(3));   // tờ dưới tối dần → sáng dần bằng lớp phủ mờ (không filter)
       const ease = r * r, tx = -0.05 * W * ease, ty = -0.62 * H * ease, rot = -0.17 * ease, sc = 1 + 0.03 * r, op = r < 0.55 ? 1 : 1 - (r - 0.55) / 0.45;
       const tf = r > 0 ? `translate(${tx}px,${ty}px) rotate(${rot}rad) scale(${sc})` : "";
@@ -729,7 +729,7 @@ class LichBlocXuaCard extends HTMLElement {
       huy() {   // bỏ bóc dở: trả mọi thứ về như chưa chạm
         nhom.remove(); bong.remove();
         tren.style.clipPath = tren.style.transform = tren.style.opacity = tren.style.willChange = ""; if (bt) bt.style.opacity = "";
-        duoi.style.transform = ""; if (dd) dd.style.opacity = "";
+         if (dd) dd.style.opacity = "";
       },
       xong() { nhom.remove(); bong.remove(); tren.style.visibility = "hidden"; },
     };

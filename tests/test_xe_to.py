@@ -137,3 +137,11 @@ def test_toc_do_xe_ap_cho_xe_dan_lat_va_co_o_cau_hinh():
     assert 'h("Tốc độ xé tờ", "toc_do_xe"' in js and "toc_do_xe: 1" in js and 'name: "toc_do_xe"' in js and "toc_do_xe:" in js.split("const NHAN_SUA", 1)[1]
     assert 'i.dataset.k !== "toc_do_xe"' in js, "kéo thanh tốc độ xé không được khởi động lại lịch nghỉ/chạy của con vật"
     assert "toc_do_xe" in (GOC / "README.md").read_text(encoding="utf-8")
+
+
+def test_to_duoi_khong_doi_ti_le_theo_khung():
+    """Đổi scale/transform của tờ dưới mỗi khung làm trình duyệt dựng lại cả tờ (điện thoại ra ô trống như ảnh chủ máy): chỉ được đổi độ tối bằng lớp phủ."""
+    js = THE.read_text(encoding="utf-8")
+    dung = js.split("_dungXe(tren, duoi) {", 1)[1].split("// bóc dần từ mức", 1)[0]
+    assert "duoi.style.transform" not in dung and "duoi.style.filter" not in dung
+    assert "dd.style.opacity" in dung
