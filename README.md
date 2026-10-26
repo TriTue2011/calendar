@@ -67,6 +67,7 @@ chay_giay: 6          # con vật bước trong bao nhiêu giây
 nghi_giay: 25         # rồi đứng nghỉ bao nhiêu giây trước khi bước lại (0 = bước liên tục)
 toc_do: 1             # nhân tốc độ bước (0.5 = chậm một nửa, 2 = nhanh gấp đôi)
 toc_do_xe: 1          # nhân tốc độ xé/dán/lật tờ (0.5 = chậm một nửa, 2 = nhanh gấp đôi; mặc định xé ≈ 1,1 giây)
+chan_doan: false      # true = hiện khung số đo ở đáy thẻ (khung hình, lỗi, trạng thái hai tờ sau khi xé) để chép gửi khi thẻ bị giật/trống
 cai_dat: true         # nút bánh răng ngay trên thẻ để chỉnh ba thông số trên (false = ẩn nút)
 rong: 380             # chiều rộng tối đa (px)
 ```
@@ -82,6 +83,10 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 - **Chỉnh ngay trên thẻ**: bấm nút bánh răng ở góc trên bên phải để kéo thanh trượt *Tốc độ bước*, *Tốc độ xé tờ*, *Bước trong*, *Nghỉ*; áp dụng tức thì và nhớ riêng cho từng thiết bị (điện thoại và bảng treo tường có thể khác nhau). «Mặc định» quay về giá trị trong YAML. Giá trị trong YAML (`toc_do`, `toc_do_xe`, `chay_giay`, `nghi_giay`) là mặc định cho mọi thiết bị.
 - Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng yên đủ chân, không vẽ lại; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
 - Mức dùng CPU của bản chân vẽ rời **chưa đo** (số cũ ~2,8% là của bản sprite CSS).
+
+## Chẩn đoán khi thẻ bị lỗi
+
+Thêm `chan_doan: true` vào cấu hình thẻ, tải lại trang, xé vài tờ. Ở đáy thẻ hiện một khung chữ: máy và tỉ lệ màn hình, số khung hình và khung chậm của từng lần xé, tác vụ dài, lỗi bắt được, số lớp đồ hoạ, và trạng thái hai tờ ngay sau khi dựng lại. Bấm **Chép** rồi dán gửi đi. Thẻ chỉ đo trên máy bạn, không gửi hay lưu gì ra ngoài; tắt `chan_doan` là hết.
 
 ## Giới hạn đã biết
 
