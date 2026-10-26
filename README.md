@@ -4,7 +4,7 @@
 
 Âm lịch Việt Nam, sự kiện giỗ/lễ/sinh nhật đếm ngược, thực thể **Lịch** của Home Assistant, và hai thẻ giao diện có con giáp động:
 
-- **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Vuốt lên thì chính cuộn giấy bóc dần theo ngón tay (tờ trên che kín tờ dưới lúc đầu, rồi nhả dần để lộ tờ dưới); thả tay thì chạy tiếp từ mức đang kéo, kéo ngắn thì giấy trả về chỗ cũ. Tờ giấy bị bóc từ góc dưới phải và cong thành một cuộn (không gập phẳng): phần cong chia thành 10 dải mỏng (mỗi dải là một lớp nhỏ, không dùng bộ lọc, để điện thoại yếu không giật), mỗi dải xoay theo góc cuộn và đổi sáng tối, qua nửa vòng thì hiện mặt sau mỏng lộ mờ chữ mặt trước rồi nằm ngược lại đè lên tờ, đổ bóng xuống tờ dưới, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
+- **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Vuốt lên thì chính cuộn giấy bóc dần theo ngón tay (tờ trên che kín tờ dưới lúc đầu, rồi nhả dần để lộ tờ dưới); thả tay thì chạy tiếp từ mức đang kéo, kéo ngắn thì giấy trả về chỗ cũ. Tờ giấy bị bóc từ góc dưới phải và cong thành một cuộn (không gập phẳng): chỗ cong là một dải sáng tối, phần giấy dài hơn nửa vòng cuộn nằm ngược lại đè lên tờ (mặt sau giấy), đổ bóng xuống tờ dưới; chỉ khoảng 4 lớp đồ hoạ, không nhân bản tờ, không bộ lọc nên màn rất nét không bị trống, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
 - **Lịch để bàn**: lịch tháng gáy lò xo, lật tờ qua gáy khi đổi tháng, chạm một ngày để xem chi tiết.
 - **Ảnh nền phong cảnh theo con giáp**: mỗi con giáp có 12 ảnh nền (12 tháng: đào Tết, đèn lồng, sen, phượng, trăng rằm, lúa chín, cúc, lá thu…) hợp với nơi ở của nó. Ảnh chỉ phủ phần đầu tờ bloc (đến đường gạch dưới dòng âm lịch) và khu lưới ngày của lịch để bàn, có lớp giấy mờ phủ lên để số ngày luôn rõ.
 - **Con giáp theo ngày**: mỗi tờ hiện con giáp của *ngày* đó (kèm huy hiệu tháng, năm), đổi liên tục khi sang ngày khác. Mười con có chân bước bằng chân vẽ rời (xem dưới); rắn và rồng uốn sóng; đều là giống đực.
@@ -67,7 +67,6 @@ chay_giay: 6          # con vật bước trong bao nhiêu giây
 nghi_giay: 25         # rồi đứng nghỉ bao nhiêu giây trước khi bước lại (0 = bước liên tục)
 toc_do: 1             # nhân tốc độ bước (0.5 = chậm một nửa, 2 = nhanh gấp đôi)
 toc_do_xe: 1          # nhân tốc độ xé/dán/lật tờ (0.5 = chậm một nửa, 2 = nhanh gấp đôi; mặc định xé ≈ 1,1 giây)
-xe_kieu: cuon         # cuon = cuộn giấy đầy đủ (đẹp); don_gian = nhẹ cho máy yếu hoặc màn rất nét (≈4 lớp đồ hoạ thay vì 12; nếu tờ bị trống/giật khi xé thì thử cái này)
 chan_doan: false      # true = hiện khung số đo ở đáy thẻ (khung hình, lỗi, trạng thái hai tờ sau khi xé) để chép gửi khi thẻ bị giật/trống
 cai_dat: true         # nút bánh răng ngay trên thẻ để chỉnh ba thông số trên (false = ẩn nút)
 rong: 380             # chiều rộng tối đa (px)
