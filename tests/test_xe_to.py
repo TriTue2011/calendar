@@ -103,7 +103,7 @@ def test_the_dung_giay_cong():
     assert "import { cuonGiay, dangPoly } from './lich-bloc-xua-giay.js'" in js
     than = js.split("_dungXe(tren, duoi) {", 1)[1].split("// dán lại", 1)[0]
     assert "cuonGiay(W, H, u, N)" in than and "cloneNode(true)" in than, "phải cuộn giấy theo dải cong và có mặt sau lộ chữ mờ"
-    assert "const N = 10" in than, "10 dải: đủ cong mà nhẹ cho điện thoại (18 dải làm rớt khung hình)"
+    assert "const N = don ? 0 : 10" in than, "10 dải: đủ cong mà nhẹ cho điện thoại (18 dải làm rớt khung hình)"
     assert "drop-shadow" not in than and "grayscale" not in than and "brightness(" not in than.split("const doi", 1)[1], "không dùng filter trong vòng vẽ: filter bắt mỗi dải dựng lớp riêng cỡ cả tờ"
     assert "hop(d.poly)" in than, "mỗi dải phải là lớp nhỏ theo hộp bao của chính nó, không phải cả tờ"
     assert "if (!dang) await new Promise((fin) => requestAnimationFrame(() => requestAnimationFrame(fin)))" in than, "bấm nút: dựng lớp xong (hai khung) rồi mới đếm giờ để khung đầu không giật"
@@ -145,3 +145,16 @@ def test_to_duoi_khong_doi_ti_le_theo_khung():
     dung = js.split("_dungXe(tren, duoi) {", 1)[1].split("// bóc dần từ mức", 1)[0]
     assert "duoi.style.transform" not in dung and "duoi.style.filter" not in dung
     assert "dd.style.opacity" in dung
+
+
+def test_xe_kieu_don_gian_cho_may_yeu():
+    """xe_kieu: don_gian = không nhân bản tờ, không dải (≈4 lớp thay vì 12); mặc định vẫn là cuộn giấy đầy đủ; có trong form cấu hình và README."""
+    js = THE.read_text(encoding="utf-8")
+    than = js.split("_dungXe(tren, duoi) {", 1)[1].split("// bóc dần từ mức", 1)[0]
+    assert 'const don = this._cfg.xe_kieu === "don_gian"' in than
+    assert "const eco = don ? document.createElement(\"div\") : banSao()" in than, "chế độ đơn giản không được nhân bản tờ"
+    assert "g.dai.slice(0, N)" in than, "N = 0 thì không dựng dải"
+    assert "catNuaMat(catNuaMat(" in than, "dải cong của chế độ đơn giản cắt theo vùng cuộn"
+    assert 'xe_kieu: "cuon"' in js, "mặc định phải là cuộn giấy đầy đủ"
+    assert 'name: "xe_kieu"' in js and "don_gian" in js.split("const SCHEMA_SUA", 1)[1]
+    assert "xe_kieu" in (GOC / "README.md").read_text(encoding="utf-8")

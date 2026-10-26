@@ -10,10 +10,10 @@ import {
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 import { taoXuong } from './lich-bloc-xua-xuong.js';
 import { taoChan } from './lich-bloc-xua-chan.js';
-import { cuonGiay, dangPoly } from './lich-bloc-xua-giay.js';
+import { catNuaMat, cuonGiay, dangPoly } from './lich-bloc-xua-giay.js';
 import { ChanDoan } from './lich-bloc-xua-chandoan.js';
 
-const PHIEN_BAN = "1.4.0";   // khớp manifest.json (có test canh)
+const PHIEN_BAN = "1.4.1";   // khớp manifest.json (có test canh)
 
 const THU_ANH = {
   // Mỗi sprite sheet là lưới 6 cột × 3 hàng = 18 khung: khung 0–15 là MỘT CHU KỲ BƯỚC THẬT gồm 16 tư thế (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều
@@ -245,6 +245,7 @@ button{font:inherit;color:inherit}
 .cdoan-dau{display:flex;gap:8px;align-items:center;margin-bottom:4px}.cdoan-dau b{flex:1;font-family:system-ui,sans-serif;font-size:11px}
 .cdoan button{border:1px solid #fff4d9;background:transparent;color:#fff4d9;border-radius:99px;padding:3px 10px;font:inherit;font-family:system-ui,sans-serif;font-size:11px;cursor:pointer}
 .cdoan pre{margin:0;white-space:pre-wrap;word-break:break-word}
+.giay-phang{background-image:radial-gradient(120% 90% at 50% 40%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),linear-gradient(180deg,#f9f1dc,#eddcb5)!important}   /* giấy không nhiễu SVG: chế độ xé đơn giản */
 /* ================= BLOC ================= */
 .chong{position:relative;perspective:1500px;perspective-origin:50% 8%;padding-top:4.2cqw}
 .chong::before{content:"";position:absolute;left:3cqw;right:3cqw;bottom:-2.4cqw;height:5cqw;border-radius:50%;background:radial-gradient(ellipse at center,rgba(60,35,10,.38),rgba(60,35,10,0) 70%);z-index:0}
@@ -720,7 +721,10 @@ class LichBlocXuaCard extends HTMLElement {
       b.style.cssText = `position:absolute;width:${W}px;height:${H}px;margin:0;transform:none;pointer-events:none`;
       return b;
     };
-    const N = 10, Lb = Math.hypot(W, H) * 1.6;
+    // xe_kieu: "don_gian" = chế độ nhẹ cho máy yếu/màn rất nét: không nhân bản tờ, không dải; chỉ tờ trên cắt theo đường cuộn + một dải sáng tối
+    // mô phỏng chỗ cong + mặt sau giấy phẳng (≈4 lớp thay vì 12). Mặc định "cuon" = cuộn giấy đầy đủ.
+    const don = this._cfg.xe_kieu === "don_gian";
+    const N = don ? 0 : 10, Lb = Math.hypot(W, H) * 1.6;
     // nhóm phủ lên tờ (cao hơn thanh ghim); mọi lớp con đặt theo toạ độ tờ
     const nhom = document.createElement("div");
     nhom.style.cssText = `position:absolute;left:${ox}px;top:${oy}px;width:${W}px;height:${H}px;z-index:9;pointer-events:none;transform-origin:${W / 2}px 0;will-change:transform,opacity`;
@@ -735,9 +739,12 @@ class LichBlocXuaCard extends HTMLElement {
     }
     // phần nằm ngược lại: mặt sau mỏng, lộ mờ chữ mặt trước lật gương (ma trận phản chiếu), viền bóng bằng gradient (không filter)
     const gap = document.createElement("div"); gap.style.cssText = "position:absolute;overflow:hidden;pointer-events:none";
-    const matSau = document.createElement("div"); matSau.className = "giay"; matSau.style.cssText = "position:absolute;inset:0";
-    const eco = banSao(); eco.querySelectorAll("img").forEach((e) => e.remove());
-    eco.style.cssText += ";left:0;top:0;transform-origin:0 0;opacity:.11";
+    const matSau = document.createElement("div"); matSau.className = don ? "giay giay-phang" : "giay"; matSau.style.cssText = "position:absolute;inset:0";
+    const eco = don ? document.createElement("div") : banSao(); if (!don) { eco.querySelectorAll("img").forEach((e) => e.remove()); eco.style.cssText += ";left:0;top:0;transform-origin:0 0;opacity:.11"; }
+    // dải cong của chế độ đơn giản: hình chữ nhật dọc theo đường tiếp xúc, sáng (v=0) → tối (v=−R), cắt theo vùng cuộn
+    const cuon = document.createElement("div");
+    cuon.style.cssText = `position:absolute;left:0;top:0;width:${Lb}px;transform-origin:0 0;background:linear-gradient(180deg,rgba(255,250,232,.96),rgba(228,212,172,.98) 55%,rgba(150,120,70,.98));display:${don ? "" : "none"}`;
+    nhom.appendChild(cuon);
     const vienGap = document.createElement("div"); vienGap.style.cssText = "position:absolute;inset:0;background:linear-gradient(0deg,rgba(60,38,12,.30) 0,rgba(255,252,238,.35) 2.2cqw,rgba(0,0,0,0) 9cqw)";
     gap.append(matSau, eco, vienGap); nhom.appendChild(gap); chong.appendChild(nhom);
     // bóng trên tờ dưới, sát đáy cung, phía phần giấy đã bóc đi
@@ -748,9 +755,16 @@ class LichBlocXuaCard extends HTMLElement {
     tren.style.willChange = "clip-path, transform";
     const hop = (poly) => { const xs = poly.map((p) => p[0]), ys = poly.map((p) => p[1]); const x0 = Math.floor(Math.min(...xs)), y0 = Math.floor(Math.min(...ys)); return [x0, y0, Math.ceil(Math.max(...xs)) - x0, Math.ceil(Math.max(...ys)) - y0]; };
     const doi = (u, r) => {
-      const g = cuonGiay(W, H, u, N);
+      const g = cuonGiay(W, H, u, Math.max(1, N));
+      if (don) {   // dải cong đơn giản thay cho các dải nhân bản
+        const vung = catNuaMat(catNuaMat([[0, 0], [W, 0], [W, H], [0, H]], g.nx, g.ny, g.c + g.R), -g.nx, -g.ny, -g.c);
+        const dxx = Math.cos(g.al), dyy = -Math.sin(g.al);
+        cuon.style.display = vung.length >= 3 ? "" : "none"; cuon.style.height = g.R + "px";
+        cuon.style.transform = `translate(${W / 2 - dxx * Lb / 2}px,${g.yT - dyy * Lb / 2}px) rotate(${Math.atan2(dyy, dxx)}rad)`;
+        cuon.style.clipPath = dangPoly(vung);
+      }
       tren.style.clipPath = dangPoly(g.truoc);
-      g.dai.forEach((d, i) => {
+      g.dai.slice(0, N).forEach((d, i) => {
         const e = dai[i], co = d.poly.length >= 3;
         e.vo.style.display = co ? "" : "none"; if (!co) return;
         const [bx, by, bw, bh] = hop(d.poly), m = d.mat;
@@ -767,8 +781,8 @@ class LichBlocXuaCard extends HTMLElement {
       gap.style.left = gx + "px"; gap.style.top = gy + "px"; gap.style.width = gw + "px"; gap.style.height = gh + "px";
       gap.style.clipPath = dangPoly(g.gap, -gx, -gy);
       const cc = g.c + Math.PI * g.R / 2, nx = g.nx, ny = g.ny;
-      eco.style.left = -gx + "px"; eco.style.top = -gy + "px";
-      eco.style.transform = `matrix(${1 - 2 * nx * nx},${-2 * nx * ny},${-2 * nx * ny},${1 - 2 * ny * ny},${-2 * cc * nx},${-2 * cc * ny})`;
+      if (!don) { eco.style.left = -gx + "px"; eco.style.top = -gy + "px";
+      eco.style.transform = `matrix(${1 - 2 * nx * nx},${-2 * nx * ny},${-2 * nx * ny},${1 - 2 * ny * ny},${-2 * cc * nx},${-2 * cc * ny})`; }
       const dx = Math.cos(g.al), dy = -Math.sin(g.al), goc = Math.atan2(dy, dx);
       const mx = W / 2 - g.nx * g.R, my = g.yT - g.ny * g.R;   // điểm trên đường v = −R
       bong.style.clipPath = dangPoly(g.vungDay);
@@ -802,7 +816,7 @@ class LichBlocXuaCard extends HTMLElement {
     const ctl = dang || this._dungXe(tren, duoi);
     if (!ctl) return mo();
     if (!dang) await new Promise((fin) => requestAnimationFrame(() => requestAnimationFrame(fin)));
-    const gh = this._cd?.batDauXe({ kieu: dang ? "vuốt" : "nút", u0: ctl.u, hs: this._heSoXe() }); this._cdXe = gh || null;   // cho trình duyệt dựng lớp xong rồi mới đếm giờ: không giật khung đầu
+    const gh = this._cd?.batDauXe({ kieu: (dang ? "vuốt" : "nút") + (this._cfg.xe_kieu === "don_gian" ? ", xé đơn giản" : ", xé cuộn"), u0: ctl.u, hs: this._heSoXe() }); this._cdXe = gh || null;   // cho trình duyệt dựng lớp xong rồi mới đếm giờ: không giật khung đầu
     await new Promise((fin) => {
       const u0 = ctl.u, hs = this._heSoXe(), T_BOC = Math.max(260 / hs, 760 * (1 - u0) / hs), T_RA = 340 / hs, t0 = performance.now();
       const nhip = (now) => {
@@ -948,12 +962,13 @@ class LichBlocXuaCard extends HTMLElement {
 
 
 // ---------- hộp cấu hình trong trình chỉnh thẻ của Home Assistant (dùng ha-form có sẵn của HA) ----------
-const MAC_DINH = { mode: "bloc", con_giap: "ngay", hoat_hoa: true, nut: true, toc_do: 1, toc_do_xe: 1, chay_giay: 6, nghi_giay: 25, rong: 380, chan_doan: false };
+const MAC_DINH = { mode: "bloc", con_giap: "ngay", hoat_hoa: true, nut: true, toc_do: 1, toc_do_xe: 1, xe_kieu: "cuon", chay_giay: 6, nghi_giay: 25, rong: 380, chan_doan: false };
 const SCHEMA_SUA = [
   { name: "mode", selector: { select: { mode: "dropdown", options: [{ value: "bloc", label: "Tờ lịch bloc (xé từng ngày)" }, { value: "de_ban", label: "Lịch để bàn (lật tháng)" }] } } },
   { name: "calendar_entity", selector: { entity: { domain: "calendar" } } },
   { name: "con_giap", selector: { select: { mode: "dropdown", options: [{ value: "ngay", label: "Theo ngày (đổi mỗi tờ)" }, { value: "thang", label: "Theo tháng" }, { value: "nam", label: "Theo năm" }] } } },
   { name: "toc_do", selector: { number: { min: 0.25, max: 3, step: 0.05, mode: "slider" } } },
+  { name: "xe_kieu", selector: { select: { mode: "dropdown", options: [{ value: "cuon", label: "Cuộn giấy đầy đủ (đẹp, nặng hơn)" }, { value: "don_gian", label: "Đơn giản (nhẹ cho máy yếu / màn rất nét)" }] } } },
   { name: "toc_do_xe", selector: { number: { min: 0.25, max: 3, step: 0.05, mode: "slider" } } },
   { name: "chay_giay", selector: { number: { min: 1, max: 60, step: 1, mode: "slider", unit_of_measurement: "giây" } } },
   { name: "nghi_giay", selector: { number: { min: 0, max: 300, step: 5, mode: "slider", unit_of_measurement: "giây" } } },
@@ -962,7 +977,7 @@ const SCHEMA_SUA = [
   { name: "nut", selector: { boolean: {} } },
   { name: "rong", selector: { number: { min: 260, max: 600, step: 10, mode: "box", unit_of_measurement: "px" } } },
 ];
-const NHAN_SUA = { chan_doan: "Chế độ chẩn đoán (hiện khung số đo để chép gửi khi thẻ bị lỗi)", toc_do_xe: "Tốc độ xé/lật tờ (1 = mặc định; lớn hơn là nhanh hơn)", mode: "Kiểu lịch", calendar_entity: "Lịch sự kiện (thực thể calendar)", con_giap: "Con giáp hiển thị", toc_do: "Tốc độ bước (1 = mặc định; nhỏ hơn là chậm hơn)",
+const NHAN_SUA = { xe_kieu: "Kiểu xé tờ", chan_doan: "Chế độ chẩn đoán (hiện khung số đo để chép gửi khi thẻ bị lỗi)", toc_do_xe: "Tốc độ xé/lật tờ (1 = mặc định; lớn hơn là nhanh hơn)", mode: "Kiểu lịch", calendar_entity: "Lịch sự kiện (thực thể calendar)", con_giap: "Con giáp hiển thị", toc_do: "Tốc độ bước (1 = mặc định; nhỏ hơn là chậm hơn)",
   chay_giay: "Con vật bước trong bao lâu", nghi_giay: "Rồi đứng nghỉ bao lâu trước khi bước lại (0 = bước liên tục)", hoat_hoa: "Bật hoạt hoạ", nut: "Hiện hàng nút Hôm qua / Hôm nay / Ngày mai", rong: "Chiều rộng tối đa của thẻ" };
 class LichBlocXuaCardEditor extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: "open" }); this._cfg = {}; this._hass = null; }

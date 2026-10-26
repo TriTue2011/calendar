@@ -67,6 +67,7 @@ chay_giay: 6          # con vật bước trong bao nhiêu giây
 nghi_giay: 25         # rồi đứng nghỉ bao nhiêu giây trước khi bước lại (0 = bước liên tục)
 toc_do: 1             # nhân tốc độ bước (0.5 = chậm một nửa, 2 = nhanh gấp đôi)
 toc_do_xe: 1          # nhân tốc độ xé/dán/lật tờ (0.5 = chậm một nửa, 2 = nhanh gấp đôi; mặc định xé ≈ 1,1 giây)
+xe_kieu: cuon         # cuon = cuộn giấy đầy đủ (đẹp); don_gian = nhẹ cho máy yếu hoặc màn rất nét (≈4 lớp đồ hoạ thay vì 12; nếu tờ bị trống/giật khi xé thì thử cái này)
 chan_doan: false      # true = hiện khung số đo ở đáy thẻ (khung hình, lỗi, trạng thái hai tờ sau khi xé) để chép gửi khi thẻ bị giật/trống
 cai_dat: true         # nút bánh răng ngay trên thẻ để chỉnh ba thông số trên (false = ẩn nút)
 rong: 380             # chiều rộng tối đa (px)
