@@ -7,7 +7,7 @@
 - **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm).
 - **Lịch để bàn**: lịch tháng gáy lò xo, lật tờ qua gáy khi đổi tháng, chạm một ngày để xem chi tiết.
 - **Ảnh nền phong cảnh theo con giáp**: mỗi con giáp có 12 ảnh nền (12 tháng: đào Tết, đèn lồng, sen, phượng, trăng rằm, lúa chín, cúc, lá thu…) hợp với nơi ở của nó. Ảnh chỉ phủ phần đầu tờ bloc (đến đường gạch dưới dòng âm lịch) và khu lưới ngày của lịch để bàn, có lớp giấy mờ phủ lên để số ngày luôn rõ.
-- **Con giáp theo ngày**: mỗi tờ hiện con giáp của *ngày* đó (kèm huy hiệu tháng, năm), đổi liên tục khi sang ngày khác. Ngựa phi nước đại, các con khác bước đi; đều là giống đực.
+- **Con giáp theo ngày**: mỗi tờ hiện con giáp của *ngày* đó (kèm huy hiệu tháng, năm), đổi liên tục khi sang ngày khác. Mười con có chân bước bằng chân vẽ rời (xem dưới); rắn và rồng uốn sóng; đều là giống đực.
 
 Kết hợp hai nguồn: lõi tính âm lịch, cảm biến sự kiện và các thẻ gốc của [khaisilk1910/am-lich-viet-nam](https://github.com/khaisilk1910/am-lich-viet-nam) (MIT), cùng ý tưởng sự kiện lặp hằng tháng và thực thể Lịch từ tích hợp `amlich` của smarthomeblack. Phần thêm: kiểu lặp hằng tháng, thực thể Lịch, nhập sự kiện cũ, hai thẻ mới.
 
@@ -24,7 +24,7 @@ Xé tờ (nhấc mép, lật bay lên để lộ tờ ngày hôm sau) và lật 
 <p align="center"><img src="docs/anh/xe-to.webp" alt="Các mốc xé tờ"></p>
 <p align="center"><img src="docs/anh/lat-thang.webp" alt="Các mốc lật tháng"></p>
 
-Mười hai con giáp, mỗi con một sprite 18 khung: **16 tư thế của một chu kỳ bước** (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều từ trước ra sau rồi nhấc vung về trước; thú bốn chân hai chân cùng bên đi cùng pha, chân và tay phía xa vẽ sẫm hơn; ngựa phi; rắn và rồng uốn sóng) cùng 2 khung đứng nghỉ. Giữa hai tư thế liền nhau tư thế kế tiếp mờ dần vào, nên chuyển động đổi hình ở mọi khung hình (đo ở 60 khung/giây: hệ số biến thiên 0,5–0,8, trước đó 2,85 khi chỉ có 8 tư thế dừng hình):
+Con giáp có chân (chuột, trâu, hổ, mèo, ngựa, dê, khỉ, gà, chó, heo) bước bằng **chân vẽ rời**: thân là một ảnh không chân, mỗi chân là chín tư thế do mô hình tạo ảnh vẽ riêng (chân đặt trước, hạ xuống, đứng thẳng, đạp sau, nhấc lên, vung tới), ghép lớp trên Canvas 2D: chân xa (sẫm hơn, lệch pha) → thân (nhún nhẹ) → chân gần. Thú bốn chân bước so le một phần tư chu kỳ (sau gần, trước gần, sau xa, trước xa); khỉ và gà lệch nửa chu kỳ. Lúc nghỉ con vật đứng thẳng, bốn chân ở tư thế «đứng thẳng». Rắn và rồng không có chân nên vẫn uốn sóng bằng xương WebGL. Sprite 12 khung là phương án dự phòng nếu tải ảnh lỗi:
 
 <p align="center"><img src="docs/anh/12-con-giap.webp" alt="Mười hai con giáp"></p>
 
@@ -76,16 +76,18 @@ Dịch vụ `lich_viet.convert_date` quy đổi dương ↔ âm và trả về t
 
 ## Nhẹ cho dashboard
 
-- Con vật là **sprite WebP** (18 khung, khoảng 2,5 MB cho cả 12 con), phát bằng CSS; **không có vòng lặp JavaScript**. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền).
+- Con vật có chân là **ảnh WebP vẽ rời** (khoảng 3,7 MB cho cả mười con, mỗi con 200–400 KB, giải mã khoảng 8 MB bộ nhớ khi hiện), ghép bằng Canvas 2D; **một vòng requestAnimationFrame cho cả thẻ**, chỉ chạy khi con vật đang bước và thẻ đang hiện. Mỗi tờ chỉ tải con và ảnh nền của ngày đó (khoảng 20 KB mỗi ảnh nền). Rắn và rồng dùng xương WebGL; sprite CSS chỉ còn là dự phòng.
 - **Chỉnh ngay trên thẻ**: bấm nút bánh răng ở góc trên bên phải để kéo thanh trượt *Tốc độ bước*, *Bước trong*, *Nghỉ*; áp dụng tức thì và nhớ riêng cho từng thiết bị (điện thoại và bảng treo tường có thể khác nhau). «Mặc định» quay về giá trị trong YAML. Giá trị trong YAML (`toc_do`, `chay_giay`, `nghi_giay`) là mặc định cho mọi thiết bị.
-- Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng và thở nhẹ (hai khung đứng nghỉ mờ chuyển qua lại); thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
-- Đo trong Chrome không GPU: luồng chính ~2,8% khi con vật chạy, 0,0% khi nghỉ (hai thẻ cùng lúc).
+- Con vật bước 6 giây rồi đứng nghỉ 25 giây (đổi bằng `chay_giay`, `nghi_giay`); lúc nghỉ con vật đứng thẳng, không vẽ lại; thẻ **tự dừng hẳn** khi ra khỏi màn hình hoặc tab bị ẩn; tôn trọng «giảm chuyển động» của hệ điều hành.
+- Mức dùng CPU của bản chân vẽ rời **chưa đo** (số cũ ~2,8% là của bản sprite CSS).
 
 ## Giới hạn đã biết
 
-- Con chó bước bằng xương (WebGL): thẻ vẽ con chó bằng một ảnh duy nhất biến dạng theo xương (lưới tam giác, hai xương mỗi chân) thay vì sprite; các con còn lại vẫn dùng sprite. Không có WebGL thì con chó cũng dùng sprite như cũ. Ảnh lớp và khớp của chó ở `custom_components/lich_viet/frontend/xuong/` (xem ghi chú trong `cho.json`: ảnh lớp hiện tại là bản tạm tách từ khung đứng nghỉ của sprite).
+- Chân vẽ rời mỗi chân chỉ có chín tư thế, chuyển tư thế đổi hẳn (không có ảnh trung gian), nên nhịp bước theo số tư thế; ở vài tư thế có thể còn mép nhỏ lệch ở chỗ chân gặp thân (nhất là chân sau xa của trâu và heo). Muốn vẽ lại một tư thế: tạo lại ảnh rồi đóng gói bằng `tools/chan_roi/dung_chan.py` (ảnh ra ở `custom_components/lich_viet/frontend/chan/<khoá>/`).
+- Con chuột bước bằng bốn chân (đã vẽ lại dáng bò so với bản sprite đứng thẳng); ở một tư thế nhấc chân trước xa, chân đó nằm trọn sau thân nên không thấy.
+- Rắn, rồng: xương WebGL (một ảnh biến dạng theo lưới tam giác); không có WebGL thì dùng sprite.
 - Hình con giáp do mô hình AI vẽ (phong cách chibi Tết, giống đực); bản gốc nằm trong `custom_components/lich_viet/frontend/thu/`. Muốn đổi, thay tệp `<khoa>.webp` cùng quy cách (lưới 4×3 khung, nền trong suốt). Ảnh nền nằm ở `frontend/nen/<khoa>-<tháng>.webp` (12 ảnh mỗi con, tỉ lệ 2:1). Khoá: `ty suu dan mao thin ran ngo mui than ga cho heo`.
-- Đã kiểm bằng 42 test (gồm 8 test chạy trong Home Assistant giả lập: nhập sự kiện, thực thể Lịch, cảm biến, dịch vụ nhập) và Chrome không đầu cho hai thẻ. **Chưa chạy trong Home Assistant thật của bạn**: màn hình cấu hình bằng tay (thêm sự kiện qua giao diện) và việc đăng ký thẻ trên dashboard thật chưa được thử.
+- Đã kiểm bằng 140 test (gồm test chạy trong Home Assistant giả lập: nhập sự kiện, thực thể Lịch, cảm biến, dịch vụ nhập; test cấu hình và ảnh của mười con chân vẽ rời; test bộ vẽ chạy bằng node) và Chrome không đầu cho hai thẻ (thẻ bloc chạy thật cả 12 con giáp, không lỗi console). **Chưa chạy trong Home Assistant thật của bạn**: màn hình cấu hình bằng tay (thêm sự kiện qua giao diện) và việc đăng ký thẻ trên dashboard thật chưa được thử.
 - Âm lịch tính cho năm 1800–2199.
 
 ## Phát triển

@@ -9,6 +9,7 @@ import {
 } from './lich-am-duong-viet-nam-core.js?v=20261005';
 import { CHI_KHOA, TEN_THU, THU_CSS, veConGiap } from './lich-bloc-xua-thu.js';
 import { taoXuong } from './lich-bloc-xua-xuong.js';
+import { duongDanAnh, taoChan } from './lich-bloc-xua-chan.js';
 
 const THU_ANH = {
   // Mỗi sprite sheet là lưới 6 cột × 3 hàng = 18 khung: khung 0–15 là MỘT CHU KỲ BƯỚC THẬT gồm 16 tư thế (vẽ theo sơ đồ xương tính bằng toán: chân chạm đất trượt đều
@@ -36,6 +37,36 @@ const THU_XUONG = {
   ty: { chinh: "xuong/ty-chinh.webp", xa: "xuong/ty-xa.webp", cfg: "xuong/ty.json" },
   heo: { chinh: "xuong/heo-chinh.webp", xa: "xuong/heo-xa.webp", cfg: "xuong/heo.json" },
 };
+// Con giáp vẽ bằng «chân vẽ rời» (Canvas 2D, không cần WebGL): thân một ảnh không chân + mỗi chân chín tư thế
+// vẽ riêng, ghép lớp chân xa → thân → chân gần. Ưu tiên hơn xương và sprite; thiếu/lỗi tệp thì rơi về xương rồi sprite.
+// Rồng và rắn không có chân nên vẫn đi đường xương (uốn sóng).
+const THU_CHAN = new Set(["ga", "than", "ty", "cho", "suu", "dan", "mao", "ngo", "mui", "heo"]);
+const _cfgChanCache = new Map();
+function taiCauHinhChan(khoa) {
+  if (!_cfgChanCache.has(khoa)) {
+    _cfgChanCache.set(khoa, fetch(new URL(`./chan/${khoa}/lich.json`, import.meta.url)).then((r) => {
+      if (!r.ok) throw new Error("không tải được cấu hình chân " + khoa);
+      return r.json();
+    }));
+  }
+  return _cfgChanCache.get(khoa);
+}
+const _anhChanCache = new Map();
+const taiMotAnh = (url) => new Promise((res, rej) => {
+  const im = new Image();
+  im.onload = () => res(im); im.onerror = () => rej(new Error("không tải được ảnh " + url));
+  im.src = url;
+});
+function taiAnhChan(khoa, cfg) {
+  if (!_anhChanCache.has(khoa)) {
+    const goc = new URL(`./chan/${khoa}/`, import.meta.url).href, dd = duongDanAnh(cfg);
+    const nap = (l) => Promise.all(l.map((f) => taiMotAnh(goc + f)));
+    _anhChanCache.set(khoa, Promise.all([taiMotAnh(goc + dd.than), ...dd.bo.map(async (b) => ({ gan: await nap(b.gan), xa: await nap(b.xa) }))])
+      .then(([than, ...bo]) => ({ than, bo })));
+    _anhChanCache.get(khoa).catch(() => _anhChanCache.delete(khoa));   // lỗi mạng một lần thì lần sau thử lại
+  }
+  return _anhChanCache.get(khoa);
+}
 // Thử tạo ngữ cảnh WebGL một lần, nhớ kết quả; huỷ ngay ngữ cảnh thử để khỏi
 // tốn suất (~16 ngữ cảnh/trình duyệt).
 let _coWebGL = null;
@@ -164,6 +195,14 @@ function dongSprite(khoa) {
   return spriteCache.get(khoa);
 }
 async function hinhThu(khoa, chay, heSo = 1) {
+  // Đường «chân vẽ rời» (Canvas 2D): con có chân; tải cấu hình lỗi thì rơi xuống đường xương/sprite bên dưới.
+  if (THU_CHAN.has(khoa)) {
+    try {
+      const cfg = await taiCauHinhChan(khoa);
+      const [W, H] = cfg.khung;
+      return `<canvas class="xuong${chay ? " chay" : ""}" data-xuong="${khoa}" data-chan="1" width="${W}" height="${H}" style="aspect-ratio:${W}/${H};width:100%;display:block" role="img" aria-label="${esc(TEN_THU[khoa] || "")}"></canvas>`;
+    } catch (e) { /* rơi xuống xương/sprite */ }
+  }
   // Đường xương: chỉ khi khoá có trong THU_XUONG VÀ trình duyệt có WebGL;
   // tải cấu hình/ảnh lỗi thì rơi về sprite như cũ (không vỡ thẻ).
   if (THU_XUONG[khoa] && coWebGL()) {
@@ -426,9 +465,16 @@ class LichBlocXuaCard extends HTMLElement {
       if (!cv.isConnected) continue;
       const khoa = cv.dataset.xuong;
       try {
-        const cfg = await taiCauHinhXuong(khoa);
-        const anh = await taiAnhXuongCa(khoa);
-        this._xuongs.push(taoXuong(cv, cfg, anh));
+        if (cv.dataset.chan) {
+          const cfg = await taiCauHinhChan(khoa);
+          const anh = await taiAnhChan(khoa, cfg);
+          if (!cv.isConnected) continue;   // thẻ đã vẽ lại ngày khác trong lúc tải ảnh
+          this._xuongs.push(taoChan(cv, cfg, anh));
+        } else {
+          const cfg = await taiCauHinhXuong(khoa);
+          const anh = await taiAnhXuongCa(khoa);
+          this._xuongs.push(taoXuong(cv, cfg, anh));
+        }
         cv.dataset.xuongDaChay = "1";
       } catch (e) {
         cv.replaceWith(Object.assign(document.createElement("div"), { className: "thu nghi", innerHTML: veConGiap(khoa, "u" + ++_uid) }));
@@ -445,7 +491,7 @@ class LichBlocXuaCard extends HTMLElement {
         const toc = Math.min(4, Math.max(0.25, +this._cai("toc_do") > 0 ? +this._cai("toc_do") : 1));
         if (this._gocXuong === undefined) this._gocXuong = now;
         const t = (((now - this._gocXuong) / 1000) / 1.2 * toc) % 1;
-        for (const x of this._xuongs) x.ve(this._chayThu === false ? 0 : t);
+        for (const x of this._xuongs) { if (this._chayThu === false && x.nghi) x.nghi(); else x.ve(this._chayThu === false ? 0 : t); }
       }
       this._rafXuong = requestAnimationFrame(buoc);
     };
