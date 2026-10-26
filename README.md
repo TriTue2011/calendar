@@ -4,7 +4,7 @@
 
 Âm lịch Việt Nam, sự kiện giỗ/lễ/sinh nhật đếm ngược, thực thể **Lịch** của Home Assistant, và hai thẻ giao diện có con giáp động:
 
-- **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Tờ giấy bị bóc từ góc dưới phải: nếp gấp quét dọc tờ, phần gập hiện mặt sau mỏng lộ mờ chữ mặt trước, đổ bóng xuống tờ dưới, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
+- **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Tờ giấy bị bóc từ góc dưới phải và cong thành một cuộn (không gập phẳng): phần cong chia thành 18 dải mỏng, mỗi dải xoay theo góc cuộn và đổi sáng tối, qua nửa vòng thì hiện mặt sau mỏng lộ mờ chữ mặt trước rồi nằm ngược lại đè lên tờ, đổ bóng xuống tờ dưới, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
 - **Lịch để bàn**: lịch tháng gáy lò xo, lật tờ qua gáy khi đổi tháng, chạm một ngày để xem chi tiết.
 - **Ảnh nền phong cảnh theo con giáp**: mỗi con giáp có 12 ảnh nền (12 tháng: đào Tết, đèn lồng, sen, phượng, trăng rằm, lúa chín, cúc, lá thu…) hợp với nơi ở của nó. Ảnh chỉ phủ phần đầu tờ bloc (đến đường gạch dưới dòng âm lịch) và khu lưới ngày của lịch để bàn, có lớp giấy mờ phủ lên để số ngày luôn rõ.
 - **Con giáp theo ngày**: mỗi tờ hiện con giáp của *ngày* đó (kèm huy hiệu tháng, năm), đổi liên tục khi sang ngày khác. Mười con có chân bước bằng chân vẽ rời (xem dưới); rắn và rồng uốn sóng; đều là giống đực.

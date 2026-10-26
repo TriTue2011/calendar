@@ -1,9 +1,11 @@
-"""Kiểm tra hiệu ứng xé tờ «như giấy thật»: hình học bóc giấy (node) và nối vào thẻ.
+"""Kiểm tra hiệu ứng xé tờ «giấy cong như thật»: hình học cuộn trụ (node) và nối vào thẻ.
 
-Giấy bị bóc từ góc dưới phải; nếp gấp là một đường thẳng nghiêng. Phần phía góc gập qua nếp (đối xứng gương) nên:
-- diện tích phần còn phẳng + diện tích phần gập = diện tích tờ, và phần gập giữ nguyên diện tích sau khi đối xứng;
-- càng bóc, phần còn phẳng càng nhỏ, phần gập càng lớn; lúc bắt đầu gần như chưa bóc, lúc cuối chỉ còn dải sát mép trên (chỗ dán);
-- phần gập đối xứng nằm cùng phía với phần còn phẳng (gập lên trên tờ), mỗi điểm của nó cách nếp bằng điểm gốc.
+Giấy bị bóc từ góc dưới phải và CONG thành trụ bán kính R (không gập phẳng): từ đường tiếp xúc T tờ giấy cuộn theo cung
+(nửa vòng πR) rồi nằm ngược lại đè lên phần còn lại. Kiểm các bất biến:
+- phần còn dán + các dải cong + phần nằm ngược lại phủ vừa đủ cả tờ (không hở, không chồng, diện tích cộng lại bằng cả tờ);
+- ảnh của mỗi dải qua ma trận rơi vào dải cung v ∈ [−R, 0]; dải thu mỏng theo cosθ, mặt sau khi θ > π/2;
+- phần nằm ngược lại nằm phía trên đường T (đè lên phần còn dán); càng bóc phần còn dán càng nhỏ;
+- bán kính R lớn lúc đầu (bóc nhẹ) rồi nhỏ dần (gập gắt hơn khi sắp rời).
 """
 
 from __future__ import annotations
@@ -23,25 +25,32 @@ THE = FE / "lich-bloc-xua-card.js"
 NODE = shutil.which("node")
 
 
-def _node(ma: str) -> dict:
+def _node(ma: str):
     r = subprocess.run([NODE, "--input-type=module", "-e", ma], capture_output=True, text=True, timeout=60)
     assert r.returncode == 0, r.stderr
     return json.loads(r.stdout.strip())
 
 
 @pytest.mark.skipif(NODE is None, reason="không có node")
-def test_hinh_hoc_boc_giay():
+def test_hinh_hoc_giay_cong():
     ma = textwrap.dedent(f"""
-        import {{ nepGap, catNuaMat, guongQua, dangPoly }} from "{GIAY.as_uri()}";
-        const dt = (p) => Math.abs(p.reduce((s, q, i) => {{ const r = p[(i + 1) % p.length]; return s + q[0] * r[1] - r[0] * q[1]; }}, 0)) / 2;
-        const W = 380, H = 650, ra = {{ buoc: [] }};
+        import {{ cuonGiay, dangPoly }} from "{GIAY.as_uri()}";
+        const dt = (p) => p.length < 3 ? 0 : Math.abs(p.reduce((s, q, i) => {{ const r = p[(i + 1) % p.length]; return s + q[0] * r[1] - r[0] * q[1]; }}, 0)) / 2;
+        const W = 380, H = 650, N = 12, ra = {{ buoc: [] }};
         for (const u of [0, 0.05, 0.25, 0.5, 0.75, 1]) {{
-          const g = nepGap(W, H, u);
-          const dtGoc = dt(g.goc), dtTruoc = dt(g.truoc), dtGap = dt(g.gap);
-          // mọi đỉnh gập cách nếp đúng bằng đỉnh gốc, nằm phía trên nếp (nx·x+ny·y+c ≥ 0)
-          let sai = 0, duoiNep = 0;
-          g.goc.forEach((p, i) => {{ const d0 = Math.abs(g.nx * p[0] + g.ny * p[1] + g.c), q = g.gap[i], d1 = g.nx * q[0] + g.ny * q[1] + g.c; if (Math.abs(d0 - Math.abs(d1)) > 1e-6) sai++; if (d1 < -1e-6) duoiNep++; }});
-          ra.buoc.push({{ u, tong: Math.round(dtGoc + dtTruoc), dtTruoc: Math.round(dtTruoc), dtGoc: Math.round(dtGoc), gapBangGoc: Math.abs(dtGap - dtGoc) < 1e-6, sai, duoiNep, yq: Math.round(g.yq) }});
+          const g = cuonGiay(W, H, u, N), v = (p) => g.nx * p[0] + g.ny * p[1] + g.c;
+          const daiDt = g.dai.reduce((s, d) => s + dt(d.poly), 0);
+          // phần ngược lại là gương của phần giấy dài hơn πR nên cùng diện tích với nó
+          const gapDt = dt(g.gap);
+          let ngoaiCung = 0, saiMat = 0, gapDuoiT = 0;
+          g.dai.forEach((d) => {{
+            // dung sai: dải thẳng xấp xỉ cung nên lồi ra tối đa vài % bán kính
+            const m = d.mat;
+            d.poly.forEach((p) => {{ const q = [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]], vq = v(q); if (vq < -1.03 * g.R || vq > 0.02 * g.R) ngoaiCung++; }});
+            if (d.sau !== (d.th > Math.PI / 2)) saiMat++;
+          }});
+          g.gap.forEach((p) => {{ if (v(p) < -0.01) gapDuoiT++; }});
+          ra.buoc.push({{ u, truoc: Math.round(dt(g.truoc)), dai: Math.round(daiDt), gap: Math.round(gapDt), ngoaiCung, saiMat, gapDuoiT, R: g.R, yT: Math.round(g.yT), so: g.dai.length }});
         }}
         ra.dang = dangPoly([[0, 0], [10, 0], [10, 5]]);
         ra.rong = dangPoly([]);
@@ -49,23 +58,52 @@ def test_hinh_hoc_boc_giay():
     """)
     ra = _node(ma)
     b = ra["buoc"]
-    assert all(x["tong"] == 380 * 650 for x in b), "phần phẳng + phần gập phải bằng cả tờ"
-    assert all(x["gapBangGoc"] for x in b), "gập không làm đổi diện tích"
-    assert all(x["sai"] == 0 for x in b), "đối xứng giữ nguyên khoảng cách tới nếp"
-    assert all(x["duoiNep"] == 0 for x in b), "phần gập phải nằm phía trên nếp (lên trên tờ)"
-    truoc = [x["dtTruoc"] for x in b]
-    assert truoc == sorted(truoc, reverse=True), "càng bóc phần còn phẳng càng nhỏ"
-    assert b[0]["dtGoc"] < 0.07 * 380 * 650, "lúc bắt đầu mới bóc một góc nhỏ"
-    assert b[-1]["dtTruoc"] < 0.18 * 380 * 650 and b[-1]["yq"] < 0.12 * 650, "lúc cuối chỉ còn dải sát mép trên (chỗ dán)"
+    assert all(x["so"] == 12 for x in b)
+    assert all(x["ngoaiCung"] == 0 for x in b), "ảnh của mọi dải phải rơi vào dải cung v ∈ [−R, 0]"
+    assert all(x["saiMat"] == 0 for x in b), "mặt sau khi và chỉ khi θ > π/2"
+    assert all(x["gapDuoiT"] == 0 for x in b), "phần nằm ngược lại phải ở phía trên đường tiếp xúc T (đè lên phần còn dán)"
+    truoc = [x["truoc"] for x in b]
+    assert truoc == sorted(truoc, reverse=True), "càng bóc phần còn dán càng nhỏ"
+    assert b[0]["truoc"] == 380 * 650 or b[0]["truoc"] > 0.98 * 380 * 650, "lúc đầu gần như chưa bóc"
+    assert b[-1]["truoc"] < 0.2 * 380 * 650, "lúc cuối chỉ còn dải sát mép dán"
+    Rs = [x["R"] for x in b]
+    assert Rs == sorted(Rs, reverse=True) and Rs[0] > 1.6 * Rs[-1] > 0, "bán kính cuộn nhỏ dần (bóc nhẹ rồi gắt hơn)"
     assert ra["dang"] == "polygon(0.0px 0.0px,10.0px 0.0px,10.0px 5.0px)"
     assert ra["rong"] == "polygon(0 0,0 0,0 0)", "phần rỗng không được làm hỏng clip-path"
 
 
-def test_the_dung_hinh_hoc_boc_giay_khong_con_mep_rach_cu():
+@pytest.mark.skipif(NODE is None, reason="không có node")
+def test_phan_chia_to_khong_ho_khong_chong():
+    """Phần còn dán + mọi dải + phần giấy dài hơn πR phủ đúng cả tờ: đếm điểm mẫu thuộc đúng một vùng theo v."""
+    ma = textwrap.dedent(f"""
+        import {{ cuonGiay }} from "{GIAY.as_uri()}";
+        const W = 380, H = 650, N = 12, ra = [];
+        const trong = (poly, x, y) => {{ let t = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {{ const a = poly[i], b = poly[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) t = !t; }} return t; }};
+        for (const u of [0.1, 0.4, 0.7, 0.95]) {{
+          const g = cuonGiay(W, H, u, N); let hai = 0, khong = 0, tong = 0;
+          for (let x = 3; x < W; x += 19) for (let y = 3; y < H; y += 17) {{
+            tong++; const v = g.nx * x + g.ny * y + g.c;
+            let dem = (v >= 0 && trong(g.truoc, x, y)) ? 1 : 0;
+            g.dai.forEach((d) => {{ if (trong(d.poly, x, y)) dem++; }});
+            // phần dài hơn πR: không lưu đa giác nguồn, suy từ v ≤ −πR
+            if (v <= -Math.PI * g.R) dem++;
+            if (dem === 0) khong++; else if (dem > 1) hai++;
+          }}
+          ra.push({{ u, tong, hai, khong }});
+        }}
+        console.log(JSON.stringify(ra));
+    """)
+    for x in _node(ma):
+        assert x["khong"] == 0, f"u={x['u']}: {x['khong']}/{x['tong']} điểm không thuộc vùng nào"
+        assert x["hai"] <= 0.02 * x["tong"], f"u={x['u']}: {x['hai']}/{x['tong']} điểm thuộc hai vùng (chỉ chấp nhận sát biên)"
+
+
+def test_the_dung_giay_cong():
     js = THE.read_text(encoding="utf-8")
-    assert "import { dangPoly, nepGap } from './lich-bloc-xua-giay.js'" in js
-    thân = js.split("async _xeTo(", 1)[1].split("// dán lại", 1)[0]
-    assert "nepGap(W, H, u)" in thân and "cloneNode(true)" in thân, "phải bóc theo hình học và có mặt sau lộ chữ mờ"
-    assert "gap.remove()" in thân and "bong.remove()" in thân, "xong phải dọn lớp phụ"
-    assert "mepRach" not in js and "rotateX(-116deg)" not in thân, "hiệu ứng lật cứng cũ phải bỏ"
-    assert "this._hieuUngTat() || imLang" in thân, "giảm chuyển động/chạy im lặng vẫn chỉ mờ đi"
+    assert "import { cuonGiay, dangPoly } from './lich-bloc-xua-giay.js'" in js
+    than = js.split("async _xeTo(", 1)[1].split("// dán lại", 1)[0]
+    assert "cuonGiay(W, H, u, N)" in than and "cloneNode(true)" in than, "phải cuộn giấy theo dải cong và có mặt sau lộ chữ mờ"
+    assert "const N = 18" in than, "đủ dải để cong mượt (không thấy bậc)"
+    assert "nhom.remove()" in than and "bong.remove()" in than, "xong phải dọn lớp phụ"
+    assert "mepRach" not in js and "rotateX(-116deg)" not in than and "nepGap" not in js, "hiệu ứng lật/gập phẳng cũ phải bỏ"
+    assert "this._hieuUngTat() || imLang" in than, "giảm chuyển động/chạy im lặng vẫn chỉ mờ đi"
