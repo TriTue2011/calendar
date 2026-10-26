@@ -100,9 +100,9 @@ def test_phan_chia_to_khong_ho_khong_chong():
 
 def test_the_dung_giay_cong():
     js = THE.read_text(encoding="utf-8")
-    assert "import { cuonGiay, dangPoly } from './lich-bloc-xua-giay.js'" in js
+    assert "import { catNuaMat, cuonGiay, dangPoly } from './lich-bloc-xua-giay.js'" in js
     than = js.split("_dungXe(tren, duoi) {", 1)[1].split("// dán lại", 1)[0]
-    assert "cuonGiay(W, H, u, N)" in than and "cloneNode(true)" in than, "phải cuộn giấy theo dải cong và có mặt sau lộ chữ mờ"
+    assert "cuonGiay(W, H, u, Math.max(1, N))" in than and "cloneNode(true)" in than, "phải cuộn giấy theo dải cong và có mặt sau lộ chữ mờ"
     assert "const N = don ? 0 : 10" in than, "10 dải: đủ cong mà nhẹ cho điện thoại (18 dải làm rớt khung hình)"
     assert "drop-shadow" not in than and "grayscale" not in than and "brightness(" not in than.split("const doi", 1)[1], "không dùng filter trong vòng vẽ: filter bắt mỗi dải dựng lớp riêng cỡ cả tờ"
     assert "hop(d.poly)" in than, "mỗi dải phải là lớp nhỏ theo hộp bao của chính nó, không phải cả tờ"
