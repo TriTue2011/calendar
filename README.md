@@ -2,6 +2,8 @@
 
 # Lịch Việt — Âm lịch & Sự kiện cho Home Assistant
 
+[![Mở kho này trong HACS của bạn.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TriTue2011&repository=calendar&category=integration)
+
 Âm lịch Việt Nam, sự kiện giỗ/lễ/sinh nhật đếm ngược, thực thể **Lịch** của Home Assistant, và hai thẻ giao diện có con giáp động:
 
 - **Lịch bloc xưa**: tờ lịch xé từng ngày (kéo hoặc vuốt lên để xé, xuống để dán lại; tự xé lúc nửa đêm). Vuốt lên thì chính cuộn giấy bóc dần theo ngón tay (tờ trên che kín tờ dưới lúc đầu, rồi nhả dần để lộ tờ dưới); thả tay thì chạy tiếp từ mức đang kéo, kéo ngắn thì giấy trả về chỗ cũ. Tờ giấy bị bóc từ góc dưới phải và cong thành một cuộn (không gập phẳng): chỗ cong là một dải sáng tối, phần giấy dài hơn nửa vòng cuộn nằm ngược lại đè lên tờ (mặt sau giấy), đổ bóng xuống tờ dưới; chỉ khoảng 4 lớp đồ hoạ, không nhân bản tờ, không bộ lọc nên màn rất nét không bị trống, tới mép dán thì cả tờ bật rời và bay lên (tắt «giảm chuyển động» thì chỉ mờ đi).
